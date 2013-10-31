@@ -14,7 +14,8 @@ WriteMakefile(
 	LICENSE		=> 'artistic_2',
 	PREREQ_PM	=> {},
 	TEST_REQUIRES => {
-		"Test::More" => '0.99'
+		"Test::More" 	  => '0.99',
+		"Test::Exception" => '0.32'
 	},
 	test 			=> {
 		TESTS	=> 't/*.t'
