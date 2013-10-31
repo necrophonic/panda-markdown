@@ -47,9 +47,14 @@ sub _tokenize {
 			elsif ($c =~ /_/ ) { $self->_move_to_state('p_underline') }
 			elsif ($c =~ /\//) { $self->_move_to_state('p_emphasis')  }
 			elsif ($c =~ /\#/) { $self->_move_to_state('p_heading'); $self->head_level(0) }
-			else           	   { $self->_new_token( 'CHAR', $c )   	  }
+			elsif ($c =~ /\n/) {
+				#$self->_move_to_state('space_after_nl');
+				$self->_new_token( 'CHAR', ' ');
+				$self->_move_to_state('data');
+			}			
+			else { $self->_new_token( 'CHAR', $c ) }
 
-		}
+		}		
 		elsif ($self->state eq 'p_heading') {
 
 			if ($c =~ /\#/) {
@@ -72,8 +77,8 @@ sub _tokenize {
 				else {
 					# Treat as plain # and whatever we just read
 					$self->_new_token( 'CHAR', '#' );
-					$self->_new_token( 'CHAR', $c  );
-				}
+				}				
+				unshift @chars, $c;
 				$self->_move_to_state('data');
 			}
 
@@ -83,7 +88,7 @@ sub _tokenize {
 			if ($c =~ /\*/) { $self->_new_token( 'STRONG', '[[STRONG]]' ); }
 			else {
 				$self->_new_token( 'CHAR', '*' );
-				$self->_new_token( 'CHAR', $c  );
+				unshift @chars, $c;				
 			}
 			$self->_move_to_state('data');
 
@@ -93,7 +98,7 @@ sub _tokenize {
 			if ($c =~ /_/) { $self->_new_token( 'UNDERLINE', '[[UNDER]]' ); }
 			else {
 				$self->_new_token( 'CHAR', '_' );
-				$self->_new_token( 'CHAR', $c  );
+				unshift @chars, $c;								
 			}
 			$self->_move_to_state('data');
 
@@ -103,10 +108,13 @@ sub _tokenize {
 			if ($c =~ /\//) { $self->_new_token( 'EMPHASIS', '[[EMPH]]' ); }
 			else {
 				$self->_new_token( 'CHAR', '/' );
-				$self->_new_token( 'CHAR', $c  );
+				unshift @chars, $c;				
 			}
 			$self->_move_to_state('data');
 
+		}
+		else {
+			$self->_move_to_state('data');
 		}
 		next;
 	}

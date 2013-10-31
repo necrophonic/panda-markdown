@@ -41,6 +41,8 @@ print"\n";
 	test__underline();
 	test__header();
 
+	#test_newline(); # Test: newline after char, after other tag
+
 
 done_testing();
 exit(0);
@@ -56,22 +58,22 @@ sub test__header {
 		is( $t->get_next_token->content . $t->get_next_token->content, '#h', '#h' );
 
 		$t = PML::Tokenizer->new( pml => '##head##');
-		is( $t->get_next_token->content, '[[H1]]', 'HEAD1' );
+		is( $t->get_next_token->content . $t->get_next_token->content,, '[[H1]]h', 'HEAD1' );
 		
-		$t = PML::Tokenizer->new( pml => '###head###');
-		is( $t->get_next_token->content, '[[H2]]', 'HEAD2' );
+		$t = PML::Tokenizer->new( pml => '###head###');		
+		is( $t->get_next_token->content . $t->get_next_token->content,, '[[H2]]h', 'HEAD2' );
 
-		$t = PML::Tokenizer->new( pml => '####head####');
-		is( $t->get_next_token->content, '[[H3]]', 'HEAD3' );
+		$t = PML::Tokenizer->new( pml => '####head####');		
+		is( $t->get_next_token->content . $t->get_next_token->content,, '[[H3]]h', 'HEAD3' );
 
-		$t = PML::Tokenizer->new( pml => '#####head#####');
-		is( $t->get_next_token->content, '[[H4]]', 'HEAD4' );
+		$t = PML::Tokenizer->new( pml => '#####head#####');		
+		is( $t->get_next_token->content . $t->get_next_token->content,, '[[H4]]h', 'HEAD4' );
 
 		$t = PML::Tokenizer->new( pml => '######head######');
-		is( $t->get_next_token->content, '[[H5]]', 'HEAD5' );
+		is( $t->get_next_token->content . $t->get_next_token->content,, '[[H5]]h', 'HEAD5' );
 
-		$t = PML::Tokenizer->new( pml => '#######head#######');
-		is( $t->get_next_token->content, '[[H6]]', 'HEAD6' );
+		$t = PML::Tokenizer->new( pml => '#######head#######');		
+		is( $t->get_next_token->content . $t->get_next_token->content,, '[[H6]]h', 'HEAD6' );
 
 		dies_ok { $t = PML::Tokenizer->new( pml => '########head########') }
 				'Die on invalid header string';
