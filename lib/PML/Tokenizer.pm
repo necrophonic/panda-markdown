@@ -9,7 +9,7 @@ use boolean;
 use Moo;
 use PML::Tokenizer::Token;
 
-my $debug = true;
+my $debug = false;
 
 has 'pml'	 	 => ( is => 'rw', required => true, trigger => \&_tokenize ); # Raw PML input
 has 'tokens' 	 => ( is => 'rw' ); # Array
@@ -56,13 +56,18 @@ sub _tokenize {
 				# Started a header already, so increment the
 				# level that we've reached
 				$self->head_level($self->head_level+1);
+
+				# If we've reached the max level then error
+				if ($self->head_level>$MAX_HEAD_LEVEL) {
+					die "Bad HEADER sequence - too long";
+				}
 			}
 			else {
 				# If we've at least reached header level 1 then we
 				# output a header token. Otherwise assume it's just
-				# a hash so output that and what we just read.
-				if ($self->head_level>0) {
-					$self->_new_token( 'HEAD'.$self->head_level, '[[H'.$self->head_level.']]' );
+				# a hash so output that and what we just read.				
+				if ((my $level = $self->head_level) > 0) {
+					$self->_new_token( "HEAD$level", "[[H$level]]" );
 				}
 				else {
 					# Treat as plain # and whatever we just read
@@ -148,9 +153,7 @@ sub get_next_token {
 
 # -----------------------------------------------------------------------------
 
-sub D {
-	say @_ if $debug;
-}
+sub D {say @_ if $debug}
 
 1;
 
@@ -164,7 +167,13 @@ PML::Tokenizer
 
   use PML::Tokenizer;
 
-  my $tokenizer = PML::Tokenizer->new();
+  my $tokenizer = PML::Tokenizer->new( pml => $pml_string );
+
+  while( my $token = $tokenizer->get_next_token ) {
+	
+	# Do something with the token
+
+  }
 
 
 =head1 DESCRIPTION
@@ -175,7 +184,7 @@ Simple tokenizer for PML tokens.
 
 =head2 get_next_token
 
-Return the next token of C<0> if there are no more tokens read.
+Return the next token or C<0> if there are no more tokens read.
 
 =cut
 

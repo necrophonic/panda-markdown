@@ -23,5 +23,5 @@ sub validate_type {
 	die "Token type '$val' not valid" unless exists $types{$val};
 }
 
-"budweiser";
+1;
 
