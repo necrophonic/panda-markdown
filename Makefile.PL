@@ -12,8 +12,9 @@ WriteMakefile(
 	ABSTRACT	=> 'Blog orientated markdown',
 	AUTHOR		=> 'J Gregory <john@johngregory.me.uk>',
 	LICENSE		=> 'artistic_2',
-	PREREQ_PM	=> {
-		Moo => '1.0',
+	PREREQ_PM	=> {},
+	TEST_REQUIRES => {
+		"Test::More" => '0.99'
 	},
 	test 			=> {
 		TESTS	=> 't/*.t'
