@@ -7,10 +7,11 @@ use PML::Tokenizer::Token;
 
 note("Test valid types");
 for (qw|
-		TEXT
-		S_BOLD E_BOLD
-		S_EMPH E_EMPH
-		S_UNDR E_UNDR
+		CHAR
+		STRONG	
+		EMPHASIS
+		UNDERLINE
+		HEAD1 HEAD2 HEAD3 HEAD4 HEAD5 HEAD6
 	|) {
 	lives_ok { PML::Tokenizer::Token->new( type => $_ ) } "Type [$_] is valid";
 }

@@ -1,14 +1,41 @@
 use strict;
 use warnings;
+use boolean;
 
 use Test::More;
 
 use_ok "PML::Tokenizer";
 
-my $tokenizer = new_ok "PML::Tokenizer", [ pml => 'abc' ];
+my $pml =<<EOT
+##Heading 1##
+###Heading 2###
+####Heading 3####
+
+This is a paragraph.
+Same paragraph.
+
+New paragraph with **bold** text and __underlined__ text and
+//italic// text.
+
+This *isn't* bold
+
+Not a #heading and neither is #this#
+EOT
+;
+
+
+my $tokenizer = new_ok "PML::Tokenizer", [ pml => $pml ];
+
+while(my $token = $tokenizer->get_next_token) {
+	print $token->content;
+}
+print"\n";
 
 
 	test__get_next_token( $tokenizer );
+
+
+
 
 
 done_testing();
@@ -22,9 +49,9 @@ sub test__get_next_token {
 
 		$tokenizer->tokens([]);
 
-		push @{$tokenizer->tokens}, PML::Tokenizer::Token->new( type=>'TEXT', content => 'abc');
-		push @{$tokenizer->tokens}, PML::Tokenizer::Token->new( type=>'TEXT', content => 'bcd');
-		push @{$tokenizer->tokens}, PML::Tokenizer::Token->new( type=>'TEXT', content => 'cde');
+		push @{$tokenizer->tokens}, PML::Tokenizer::Token->new( type=>'CHAR', content => 'abc');
+		push @{$tokenizer->tokens}, PML::Tokenizer::Token->new( type=>'CHAR', content => 'bcd');
+		push @{$tokenizer->tokens}, PML::Tokenizer::Token->new( type=>'CHAR', content => 'cde');
 
 		is($tokenizer->get_next_token->content, 'abc', "Got token");
 		is($tokenizer->get_next_token->content, 'bcd', "Got token");
