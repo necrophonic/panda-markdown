@@ -7,3 +7,15 @@ A markdown type language and processor for blog postings.
 
 To develop a simple markdown language that will facilitate easy creation of rich blog postings.
 
+### Markdown ###
+
+  - ** - strong
+  - // - emphasis
+  - __ - underline
+  - ## - head 1
+  - ### - head 2
+  - #### - head 3
+  - ##### - head 4
+  - ###### - head 5
+  - ####### - head 6
+  
