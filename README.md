@@ -9,6 +9,8 @@ To develop a simple markdown language that will facilitate easy creation of rich
 
 ### Markdown ###
 
+Simple markdown implemented so far. Maps to standard HTML tags.
+
   - ** - strong
   - // - emphasis
   - __ - underline
