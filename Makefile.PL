@@ -13,9 +13,10 @@ WriteMakefile(
 	AUTHOR		=> 'J Gregory <john@johngregory.me.uk>',
 	LICENSE		=> 'artistic_2',
 	PREREQ_PM	=> {
-		'Moo'	   => '1.003001',
-		'boolean'  => '0.30',
-		'Readonly' => '1.03'
+		'Moo'	   	   => '1.003001',
+		'boolean'  	   => '0.30',
+		'Readonly' 	   => '1.03',
+		'HTML::Escape' => '1.08'
 	},
 	TEST_REQUIRES => {
 		"Test::More" 	  => '0.99',

@@ -6,6 +6,7 @@ use strict;
 use warnings;
 use boolean;
 
+use HTML::Escape;
 use PML::Tokenizer;
 
 # ------------------------------------------------------------------------------
@@ -21,7 +22,6 @@ sub _type_to_tag {
 		STRONG		=> 'strong',
 		EMPHASIS	=> 'em',
 		UNDERLINE	=> 'u'
-
 	};
 }
 
@@ -30,6 +30,10 @@ sub _type_to_tag {
 sub markdown {
 	my ($pml) = @_;
 	my $html = '';
+
+	# Clean the PML before we start as we don't allow 
+	# interpretable HTML.
+	$pml = HTML::Escape::escape_html($pml);
 
 	my $tokenizer = PML::Tokenizer->new( pml => $pml );
 
