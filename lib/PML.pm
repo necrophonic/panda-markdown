@@ -37,15 +37,16 @@ sub markdown {
 
 	my $tokenizer = PML::Tokenizer->new( pml => $pml );
 
+	# Initialise stack for nested tag matching	
+	# Stack is upside down so we know the "head" is always
+	# at position zero.
 	my @stack = ();
 
 	while(my $token = $tokenizer->get_next_token) {
 
 		my $type = $token->type;
 
-		if ($type eq 'CHAR') {
-			$html .= $token->content;
-		}
+		if ($type eq 'CHAR') { $html .= $token->content }
 		else {			
 			# If the new token is the same as the top of
 			# the stack then we pop that off and output a
@@ -77,3 +78,23 @@ sub _end_type   { return '</'._type_to_tag->{$_[0]}.'>' }
 # ------------------------------------------------------------------------------
 
 1;
+
+=pod
+
+=head1 TITLE
+
+PML - Panda Markdown Language to HTML converter
+
+=head1 SYNOPSIS
+
+  use PML;
+
+  my $pml = 'The //quick// brown __fox__ jumped over the lazy **dog**';
+
+  my $html = PML::markdown( $pml );
+
+=head1 DESCRIPTION
+
+Convert text written in PML into HTML.
+
+=cut
