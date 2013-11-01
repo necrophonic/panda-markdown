@@ -1,4 +1,4 @@
-use v5.16;
+use v5.10;
 
 use strict;
 use warnings;
@@ -13,7 +13,7 @@ use_ok "PML";
 
 	can_ok( 'PML', 'markdown' );
 
-	my $tag_map = PML::_type_to_tag;
+	my $tag_map = PML::_type_to_tag('abc');
 	is_deeply(
 		$tag_map,
 		{HEAD1	=> 'h1',

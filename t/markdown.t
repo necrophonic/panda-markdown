@@ -1,14 +1,10 @@
-use v5.16;
+use v5.10;
 
 use strict;
 use warnings;
 
 use Test::More;
 use PML;
-
-use_ok "PML";
-
-can_ok("PML","markdown");
 
 my $in =<<EOT;
 ##Heading1##

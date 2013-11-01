@@ -1,5 +1,7 @@
 package PML;
 
+use v5.10;
+
 our $VERSION = '0.1';
 
 use strict;
