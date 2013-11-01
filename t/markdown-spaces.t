@@ -2,28 +2,28 @@ use v5.16;
 
 use strict;
 use warnings;
-use boolean;
 
 use Test::More;
-use Test::Exception;
 
 use PML;
 
-use_ok "PML";
+my $in;
+my $expect;
 
-my $in =<<EOT;
-This has  some   spaces     in        it
-and   newlines   with spaces.
-EOT
-;
+# TEST 1
+$in		= "This has  some   spaces     in        it\nand   newlines   with spaces.";
+$expect = "This has some spaces in it and newlines with spaces.\n";
+is(PML::markdown($in), $expect, 'Mixed spaces ok');
 
-my $expect = "This has some spaces in it and newlines with spaces.\n";
+# TEST 2
+$in		= '   Leading spaces';
+$expect = "Leading spaces\n";
+is(PML::markdown($in), $expect, 'Leading spaces ok');
 
-my $html = PML::markdown($in);
-
-
-is($html, $expect, 'Output HTML as expected');
-
+# TEST 3
+$in		= 'Trailing spaces    ';
+$expect = "Trailing spaces\n";
+is(PML::markdown($in), $expect, 'Trailing spaces ok');
 
 done_testing();
 exit(0);
