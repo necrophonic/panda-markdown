@@ -19,6 +19,20 @@ has 'state'		 => ( is => 'rw' );
 has 'content'	 => ( is => 'rw' );
 has 'head_level' => ( is => 'rw' );
 
+# Matching contexts
+has 'matching_context' => ( is => 'rw' );
+
+# has 'open_HEAD1' 	 => ( is => 'rw', default => sub{0} );
+# has 'open_HEAD2' 	 => ( is => 'rw', default => sub{0} );
+# has 'open_HEAD3' 	 => ( is => 'rw', default => sub{0} );
+# has 'open_HEAD4' 	 => ( is => 'rw', default => sub{0} );
+# has 'open_HEAD5' 	 => ( is => 'rw', default => sub{0} );
+# has 'open_HEAD6' 	 => ( is => 'rw', default => sub{0} );
+# has 'open_UNDERLINE' => ( is => 'rw', default => sub{0} );
+# has 'open_STRONG' 	 => ( is => 'rw', default => sub{0} );
+# has 'open_EMPHASIS'  => ( is => 'rw', default => sub{0} );
+# has 'open_BLOCK' 	 => ( is => 'rw', default => sub{0} );
+
 use Readonly;
 Readonly my $MAX_HEAD_LEVEL => 6;
 
@@ -30,13 +44,15 @@ sub _tokenize {
 	# Initial state is 'data'
 	$self->state('data');
 
+	$self->matching_context({});
+
 	# Tokens initially empty
 	$self->tokens([]);
 
 	my @chars = split //, $self->pml;
 
 	# Start with a BLOCK token
-	$self->_new_token( 'BLOCK', '' );
+	$self->_new_token( 'S_BLOCK', '' );
 	
 	# Parse until we run out of data
 	while (@chars) {
@@ -86,8 +102,8 @@ sub _tokenize {
 		elsif ($self->state eq 'p_underline') {
 			$self->_emit_control_token( $c, 'UNDERLINE', '[[UNDER]]', '_', \@chars );
 		}
-		elsif ($self->state eq 'p_emphasis') {
-			$self->_emit_control_token( $c, 'EMPHASIS', '[[EMPH]]', '/', \@chars );
+		elsif ($self->state eq 'p_emphasis') {			
+			$self->_emit_control_token( $c, 'EMPHASIS', '[[EMPH]]', '/', \@chars );			
 		}
 		else {
 			$self->_move_to_state('data');
@@ -103,7 +119,9 @@ sub _tokenize {
 
 	# Make sure that BLOCKs are closed, so if the last token wasn't a block,
 	# let's emit one.
-	$self->_new_token( 'BLOCK', '' );
+	if ($self->tokens->[ $#{$self->tokens} ]->type ne 'E_BLOCK' ) {
+		$self->_new_token( 'E_BLOCK', '' );
+	}
 
 	return;
 }
@@ -113,7 +131,9 @@ sub _tokenize {
 sub _emit_control_token {
 	my ($self, $char, $type, $content, $plain, $chars_ar) = @_;
 
-	if ($char eq $plain) { $self->_new_token( $type, $content ); }
+	if ($char eq $plain) {
+		$self->_new_token( ($self->matching_context->{$type}++ %2?'E':'S')."_$type", $content );
+	}
 	else {
 		$self->_new_token( 'CHAR', $plain );
 		unshift @$chars_ar, $char;				
@@ -126,7 +146,8 @@ sub _emit_control_token {
 sub _finalise_heading {
 	my ($self) = @_;
 	if ((my $level = $self->head_level) > 0) {
-		$self->_new_token( "HEAD$level", "[[H$level]]" );
+		$self->_new_token( ($self->matching_context->{"HEAD$level"}++ %2?'E':'S')."_HEAD$level", "[[H$level]]" );
+		#self->_new_token( "HEAD$level", "[[H$level]]" );
 	}
 	else {
 		# Treat as plain # and whatever we just read

@@ -48,29 +48,29 @@ sub test__header_end_of_data {
 		my $t;
 
 		$t = PML::Tokenizer->new( pml => '#head#');
-		_match_tokens($t,[qw|BLOCK CHAR CHAR CHAR CHAR CHAR CHAR BLOCK|]);
+		_match_tokens($t,[qw|S_BLOCK CHAR CHAR CHAR CHAR CHAR CHAR E_BLOCK|]);
 
 		$t = PML::Tokenizer->new( pml => '##head##');
-		_match_tokens($t,[qw|BLOCK HEAD1 CHAR CHAR CHAR CHAR HEAD1 BLOCK|]);		
+		_match_tokens($t,[qw|S_BLOCK S_HEAD1 CHAR CHAR CHAR CHAR E_HEAD1 E_BLOCK|]);		
 
 		$t = PML::Tokenizer->new( pml => '###head###');
-		_match_tokens($t,[qw|BLOCK HEAD2 CHAR CHAR CHAR CHAR HEAD2 BLOCK|]);
+		_match_tokens($t,[qw|S_BLOCK S_HEAD2 CHAR CHAR CHAR CHAR E_HEAD2 E_BLOCK|]);
 
 		$t = PML::Tokenizer->new( pml => '####head####');
-		_match_tokens($t,[qw|BLOCK HEAD3 CHAR CHAR CHAR CHAR HEAD3 BLOCK|]);
+		_match_tokens($t,[qw|S_BLOCK S_HEAD3 CHAR CHAR CHAR CHAR E_HEAD3 E_BLOCK|]);
 
 		$t = PML::Tokenizer->new( pml => '#####head#####');
-		_match_tokens($t,[qw|BLOCK HEAD4 CHAR CHAR CHAR CHAR HEAD4 BLOCK|]);
+		_match_tokens($t,[qw|S_BLOCK S_HEAD4 CHAR CHAR CHAR CHAR E_HEAD4 E_BLOCK|]);
 
 		$t = PML::Tokenizer->new( pml => '######head######');
-		_match_tokens($t,[qw|BLOCK HEAD5 CHAR CHAR CHAR CHAR HEAD5 BLOCK|]);
+		_match_tokens($t,[qw|S_BLOCK S_HEAD5 CHAR CHAR CHAR CHAR E_HEAD5 E_BLOCK|]);
 
 		$t = PML::Tokenizer->new( pml => '#######head#######');
-		_match_tokens($t,[qw|BLOCK HEAD6 CHAR CHAR CHAR CHAR HEAD6 BLOCK|]);
+		_match_tokens($t,[qw|S_BLOCK S_HEAD6 CHAR CHAR CHAR CHAR E_HEAD6 E_BLOCK|]);
 
 		# Mismatch (allowed)
 		$t = PML::Tokenizer->new( pml => '#######head######');
-		_match_tokens($t,[qw|BLOCK HEAD6 CHAR CHAR CHAR CHAR HEAD5 BLOCK|]);
+		_match_tokens($t,[qw|S_BLOCK S_HEAD6 CHAR CHAR CHAR CHAR S_HEAD5 E_BLOCK|]);
 		
 		dies_ok { $t = PML::Tokenizer->new( pml => '########head########') }
 				'Die on invalid header string';
@@ -84,7 +84,7 @@ sub test__emphasis {
 	subtest "Test '// == emphasis'" => sub {
 				
 		my $t = PML::Tokenizer->new( pml => '//abc//');
-		_match_tokens($t, [qw|BLOCK EMPHASIS CHAR CHAR CHAR EMPHASIS BLOCK|]);
+		_match_tokens($t, [qw|S_BLOCK S_EMPHASIS CHAR CHAR CHAR E_EMPHASIS E_BLOCK|]);
 
 	}; return
 }
@@ -95,7 +95,7 @@ sub test__strong {
 	subtest "Test '** == strong'" => sub {
 				
 		my $t = PML::Tokenizer->new( pml => '**abc**');
-		_match_tokens($t, [qw|BLOCK STRONG CHAR CHAR CHAR STRONG BLOCK|]);
+		_match_tokens($t, [qw|S_BLOCK S_STRONG CHAR CHAR CHAR E_STRONG E_BLOCK|]);
 
 	}; return
 }
@@ -106,7 +106,7 @@ sub test__underline {
 	subtest "Test '__ == underline'" => sub {
 				
 		my $t = PML::Tokenizer->new( pml => '__abc__');
-		_match_tokens($t, [qw|BLOCK UNDERLINE CHAR CHAR CHAR UNDERLINE BLOCK|]);
+		_match_tokens($t, [qw|S_BLOCK S_UNDERLINE CHAR CHAR CHAR E_UNDERLINE E_BLOCK|]);
 
 	}; return
 }

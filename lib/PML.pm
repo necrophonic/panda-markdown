@@ -2,7 +2,7 @@ package PML;
 
 use v5.10;
 
-our $VERSION = '0.1';
+our $VERSION = '0.2';
 
 use strict;
 use warnings;
@@ -48,29 +48,32 @@ sub markdown {
 
 	my $tokenizer = PML::Tokenizer->new( pml => $pml );
 
-	# Initialise stack for nested tag matching	
+	# Initialise stack for nested tag completion
 	# Stack is upside down so we know the "head" is always
 	# at position zero.
 	my @stack = ();
 
 	while(my $token = $tokenizer->get_next_token) {
 
-
-		my $type = $token->type;
+		my $type = $token->type;		
 
 		if ($type eq 'CHAR') { $html .= $token->content }
 		else {			
-			# If the new token is the same as the top of
-			# the stack then we pop that off and output a
-			# closing version. Otherwise we output an
-			# opening version and push onto the stack.
-			if (@stack && $stack[0] eq $type) {				
-				$html .= _end_type($type);
-				shift @stack;
+
+			my ($start_end, $item) = $type =~ /^(S|E)_(.+)$/;
+
+			if ($start_end eq 'S') {
+				$html .= _start_type($item);
+				unshift @stack, $item
 			}
 			else {				
-				$html .= _start_type($type);
-				unshift @stack, $type;
+				if ($stack[0] ne $item) {
+					die "Unbalanced tags!"
+				}
+				else {
+					$html .= _end_type($item);
+					shift @stack; # If ok then pull off the head
+				}
 			}
 		}
 	}

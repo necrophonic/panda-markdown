@@ -14,11 +14,12 @@ sub validate_type {
 
 	my %types = qw(
 		CHAR		1
-		STRONG		1
-		EMPHASIS	1
-		UNDERLINE	1
-		HEAD1 1 HEAD2 1 HEAD3 1 HEAD4 1 HEAD5 1 HEAD6 1
-		BLOCK		1
+		S_STRONG	1	E_STRONG	1
+		S_EMPHASIS	1	E_EMPHASIS	1
+		S_UNDERLINE	1	E_UNDERLINE	1
+		S_HEAD1 1 S_HEAD2 1 S_HEAD3 1 S_HEAD4 1 S_HEAD5 1 S_HEAD6 1
+		E_HEAD1 1 E_HEAD2 1 E_HEAD3 1 E_HEAD4 1 E_HEAD5 1 E_HEAD6 1
+		S_BLOCK	1 E_BLOCK 1
 	);
 
 	die "Token type '$val' not valid" unless exists $types{$val};

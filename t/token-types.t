@@ -8,11 +8,12 @@ use PML::Tokenizer::Token;
 note("Test valid types");
 for (qw|
 		CHAR
-		STRONG	
-		EMPHASIS
-		UNDERLINE
-		HEAD1 HEAD2 HEAD3 HEAD4 HEAD5 HEAD6
-		BLOCK
+		S_STRONG	E_STRONG	
+		S_EMPHASIS	E_EMPHASIS
+		S_UNDERLINE E_UNDERLINE
+		S_HEAD1 S_HEAD2 S_HEAD3 S_HEAD4 S_HEAD5 S_HEAD6
+		E_HEAD1 E_HEAD2 E_HEAD3 E_HEAD4 E_HEAD5 E_HEAD6
+		S_BLOCK E_BLOCK
 	|) {
 	lives_ok { PML::Tokenizer::Token->new( type => $_ ) } "Type [$_] is valid";
 }
