@@ -11,13 +11,15 @@ To develop a simple markdown language that will facilitate easy creation of rich
 
 Simple markdown implemented so far. Maps to standard HTML tags.
 
+```
   - ** - strong
   - // - emphasis
   - __ - underline
+  - "" - quote
   - ## - head 1
   - ### - head 2
   - #### - head 3
   - ##### - head 4
   - ###### - head 5
   - ####### - head 6
-  
+```
