@@ -22,17 +22,6 @@ has 'head_level' => ( is => 'rw' );
 # Matching contexts
 has 'matching_context' => ( is => 'rw' );
 
-# has 'open_HEAD1' 	 => ( is => 'rw', default => sub{0} );
-# has 'open_HEAD2' 	 => ( is => 'rw', default => sub{0} );
-# has 'open_HEAD3' 	 => ( is => 'rw', default => sub{0} );
-# has 'open_HEAD4' 	 => ( is => 'rw', default => sub{0} );
-# has 'open_HEAD5' 	 => ( is => 'rw', default => sub{0} );
-# has 'open_HEAD6' 	 => ( is => 'rw', default => sub{0} );
-# has 'open_UNDERLINE' => ( is => 'rw', default => sub{0} );
-# has 'open_STRONG' 	 => ( is => 'rw', default => sub{0} );
-# has 'open_EMPHASIS'  => ( is => 'rw', default => sub{0} );
-# has 'open_BLOCK' 	 => ( is => 'rw', default => sub{0} );
-
 use Readonly;
 Readonly my $MAX_HEAD_LEVEL => 6;
 
@@ -51,8 +40,6 @@ sub _tokenize {
 
 	my @chars = split //, $self->pml;
 
-	# Start with a BLOCK token
-	$self->_new_token( 'S_BLOCK', '' );
 	
 	# Parse until we run out of data
 	while (@chars) {
@@ -60,23 +47,39 @@ sub _tokenize {
 
 		D("Read [$c] - Current state [",$self->state,"]");
 		
-		if ($self->state eq 'data') {
+		my $state = $self->state;
 
-			if 	  ($c =~ /\*/) { $self->_move_to_state('p_strong') 	  }
-			elsif ($c =~ /_/ ) { $self->_move_to_state('p_underline') }
-			elsif ($c =~ /\//) { $self->_move_to_state('p_emphasis')  }
-			elsif ($c =~ /\#/) { $self->_move_to_state('p_heading'); $self->head_level(0) }
-			elsif ($c =~ /\n/) {
-				#$self->_move_to_state('space_after_nl');
-				$self->_new_token( 'CHAR', ' ');
-				$self->_move_to_state('data');
-			}			
-			else { $self->_new_token( 'CHAR', $c ) }
+		if ($state eq 'data') {
 
-		}		
-		elsif ($self->state eq 'p_heading') {
+			if ($c eq '#') {
+				# Possible header
+				$self->_move_to_state('p_heading');
+				$self->head_level(0); # Reset header level counter
+			}
+			elsif ($c eq '/') { $self->_move_to_state('p_emphasis')  }
+			elsif ($c eq '*') { $self->_move_to_state('p_strong')  	 }
+			elsif ($c eq '_') { $self->_move_to_state('p_underline') }
+			elsif ($c eq ' ') {
+				# If we're in a block, output it, otherwise skip it
+				if ($self->_is_block_open || $self->_is_head_block_open) {
+					$self->_new_char_token(' ');
+				}
+			}
+			elsif ($c eq "\n"){ unshift @chars, ' ' }
+			else {								 				
+				if (!$self->_is_block_open && !$self->_is_head_block_open) {
+					$self->_new_token('S_BLOCK','[[S_BLOCK]]');
+				}
+				$self->_new_char_token( $c )
+			}
 
-			if ($c =~ /\#/) {
+		}
+		elsif ($state eq 'p_strong') 	{ $self->_emit_control_token( $c, 'STRONG', '[[STRONG]]', '*', \@chars )	}
+		elsif ($state eq 'p_underline') { $self->_emit_control_token( $c, 'UNDERLINE', '[[UNDER]]', '_', \@chars )	}	
+		elsif ($state eq 'p_emphasis')  { $self->_emit_control_token( $c, 'EMPHASIS', '[[EMPH]]', '/', \@chars )	}
+		elsif ($state eq 'p_heading') {
+
+			if ($c eq '#') {
 				# Started a header already, so increment the
 				# level that we've reached
 				$self->head_level($self->head_level+1);
@@ -85,30 +88,18 @@ sub _tokenize {
 				if ($self->head_level>$MAX_HEAD_LEVEL) {
 					die "Bad HEADER sequence - too long";
 				}
-			}
+			}			
 			else {
-				# If we've at least reached header level 1 then we
-				# output a header token. Otherwise assume it's just
-				# a hash so output that and what we just read.		
+				# If we've at least reached header level 1 then we output a header token.
+				# Otherwise assume it's just a hash character so output that and what we
+				# just read as character tokens.
 				$self->_finalise_heading;				
 				unshift @chars, $c;
 				$self->_move_to_state('data');
 			}
 
 		}
-		elsif ($self->state eq 'p_strong') {
-			$self->_emit_control_token( $c, 'STRONG', '[[STRONG]]', '*', \@chars );
-		}
-		elsif ($self->state eq 'p_underline') {
-			$self->_emit_control_token( $c, 'UNDERLINE', '[[UNDER]]', '_', \@chars );
-		}
-		elsif ($self->state eq 'p_emphasis') {			
-			$self->_emit_control_token( $c, 'EMPHASIS', '[[EMPH]]', '/', \@chars );			
-		}
-		else {
-			$self->_move_to_state('data');
-		}
-		next;
+		next; # Not needed, just makes flow more explicit :p
 	}
 
 	# Fix heading at end of input.
@@ -119,7 +110,7 @@ sub _tokenize {
 
 	# Make sure that BLOCKs are closed, so if the last token wasn't a block,
 	# let's emit one.
-	if ($self->tokens->[ $#{$self->tokens} ]->type ne 'E_BLOCK' ) {
+	if ($self->_is_block_open) {
 		$self->_new_token( 'E_BLOCK', '' );
 	}
 
@@ -132,9 +123,14 @@ sub _emit_control_token {
 	my ($self, $char, $type, $content, $plain, $chars_ar) = @_;
 
 	if ($char eq $plain) {
-		$self->_new_token( ($self->matching_context->{$type}++ %2?'E':'S')."_$type", $content );
+		# If there isn't a block open, then we need to open on		
+		$self->_new_token( 'S_BLOCK', '[[S_BLOCK]]') unless $self->_is_block_open;		
+
+		$self->_new_token( ($self->_is_open($type) ?'E':'S')."_$type", $content );		
 	}
 	else {
+		# If not a match then output the potential
+		# that we had as a plain char token.
 		$self->_new_token( 'CHAR', $plain );
 		unshift @$chars_ar, $char;				
 	}
@@ -143,14 +139,43 @@ sub _emit_control_token {
 
 # -----------------------------------------------------------------------------
 
+sub _is_open {
+	my ($self, $type) = @_;
+	return ($_[0]->matching_context->{$type}||0)%2;
+}
+
+sub _is_block_open {	
+	return ($_[0]->matching_context->{BLOCK}||0)%2		
+}
+
+sub _is_head_block_open {	
+	return ($_[0]->matching_context->{HEAD1}||0)%2
+		|| ($_[0]->matching_context->{HEAD2}||0)%2
+		|| ($_[0]->matching_context->{HEAD3}||0)%2
+		|| ($_[0]->matching_context->{HEAD4}||0)%2
+		|| ($_[0]->matching_context->{HEAD5}||0)%2
+		|| ($_[0]->matching_context->{HEAD6}||0)%2;
+}
+
+# -----------------------------------------------------------------------------
+
 sub _finalise_heading {
 	my ($self) = @_;
 	if ((my $level = $self->head_level) > 0) {
-		$self->_new_token( ($self->matching_context->{"HEAD$level"}++ %2?'E':'S')."_HEAD$level", "[[H$level]]" );
-		#self->_new_token( "HEAD$level", "[[H$level]]" );
+		
+		my $open_or_close = $self->_is_open("HEAD$level") ?'E':'S';
+		
+		# If we've currently got a block open, then we need to close it.
+		if ($self->_is_block_open && $open_or_close eq 'S') {
+			$self->_new_token( 'E_BLOCK', '[[E_BLOCK]]');			
+		}
+
+		# Output the appropriate level header token
+		$self->_new_token( $open_or_close."_HEAD$level", "[[H$level]]" );		
 	}
 	else {
 		# Treat as plain # and whatever we just read
+		$self->_new_token( 'S_BLOCK','[[S_BLOCK]]') unless ($self->_is_block_open);
 		$self->_new_token( 'CHAR', '#' );
 	}
 	return;
@@ -158,14 +183,27 @@ sub _finalise_heading {
 
 # -----------------------------------------------------------------------------
 
+sub _new_char_token {
+	my ($self, $content) = @_;
+	$self->_new_token('CHAR',$content);
+	return;
+}
+
+# -----------------------------------------------------------------------------
+
 sub _new_token {
 	my ($self, $type, $content) = @_;
-	if ($type eq 'CHAR') {
-		D(" -> Emit [$type] token [$content]");
+	
+	D(" -> Emit [$type] token [$content]");
+	
+	# Need to update the matching counts so for that we need the specific
+	# type (without any leading S_ or E_)
+	(my $specific_type = $type) =~ s/^(S|E)_//;	
+	if ($specific_type ne 'CHAR') {
+		$self->matching_context->{$specific_type}++;
+		D(" -> Update matching for '$specific_type'");
 	}
-	else {
-		D(" -> Emit [$type] token");
-	}
+
 	push @{$self->tokens},
 		 PML::Tokenizer::Token->new( type => $type, content => $content );
 	return;
