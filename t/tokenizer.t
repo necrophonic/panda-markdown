@@ -10,10 +10,13 @@ use_ok "PML::Tokenizer";
 
 	test__get_next_token();
 
+	test__plain_chars();
 	test__emphasis();
 	test__strong();
 	test__underline();
 	test__header_end_of_data();
+
+	test_util__is_head_block_open();
 
 	#test_newline(); # Test: newline after char, after other tag
 
@@ -24,7 +27,8 @@ exit(0);
 # ------------------------------------------------------------------------------
 
 sub _match_tokens {
-	my ($tokenizer,$expected_ar) = @_;
+	my ($tokenizer,$expected_ar,$name) = @_;
+	$name||='';
 
 	my $token = $tokenizer->get_next_token;
 	my @generated;
@@ -33,8 +37,8 @@ sub _match_tokens {
 		$token = $tokenizer->get_next_token;
 	}
 
-	my $ok = is_deeply(\@generated, $expected_ar, "Tokens as expected");
-	unless ($ok) {
+	my $ok = is_deeply(\@generated, $expected_ar, "Tokens as expected ($name)");
+	unless ($ok) {		
 		diag("Expected: ",join(",",@$expected_ar));
 		diag("Got:      ",join(",",@generated));
 	}
@@ -48,32 +52,43 @@ sub test__header_end_of_data {
 		my $t;
 
 		$t = PML::Tokenizer->new( pml => '#head#');
-		_match_tokens($t,[qw|S_BLOCK CHAR CHAR CHAR CHAR CHAR CHAR E_BLOCK|]);
+		_match_tokens($t,[qw|S_BLOCK CHAR CHAR CHAR CHAR CHAR CHAR E_BLOCK|],'Not header');
 
 		$t = PML::Tokenizer->new( pml => '##head##');
-		_match_tokens($t,[qw|S_BLOCK S_HEAD1 CHAR CHAR CHAR CHAR E_HEAD1 E_BLOCK|]);		
+		_match_tokens($t,[qw|S_HEAD1 CHAR CHAR CHAR CHAR E_HEAD1|],'Header1');		
 
 		$t = PML::Tokenizer->new( pml => '###head###');
-		_match_tokens($t,[qw|S_BLOCK S_HEAD2 CHAR CHAR CHAR CHAR E_HEAD2 E_BLOCK|]);
+		_match_tokens($t,[qw|S_HEAD2 CHAR CHAR CHAR CHAR E_HEAD2|],'Header2');
 
 		$t = PML::Tokenizer->new( pml => '####head####');
-		_match_tokens($t,[qw|S_BLOCK S_HEAD3 CHAR CHAR CHAR CHAR E_HEAD3 E_BLOCK|]);
+		_match_tokens($t,[qw|S_HEAD3 CHAR CHAR CHAR CHAR E_HEAD3|],'Header3');
 
 		$t = PML::Tokenizer->new( pml => '#####head#####');
-		_match_tokens($t,[qw|S_BLOCK S_HEAD4 CHAR CHAR CHAR CHAR E_HEAD4 E_BLOCK|]);
+		_match_tokens($t,[qw|S_HEAD4 CHAR CHAR CHAR CHAR E_HEAD4|],'Header4');
 
 		$t = PML::Tokenizer->new( pml => '######head######');
-		_match_tokens($t,[qw|S_BLOCK S_HEAD5 CHAR CHAR CHAR CHAR E_HEAD5 E_BLOCK|]);
+		_match_tokens($t,[qw|S_HEAD5 CHAR CHAR CHAR CHAR E_HEAD5|],'Header5');
 
 		$t = PML::Tokenizer->new( pml => '#######head#######');
-		_match_tokens($t,[qw|S_BLOCK S_HEAD6 CHAR CHAR CHAR CHAR E_HEAD6 E_BLOCK|]);
+		_match_tokens($t,[qw|S_HEAD6 CHAR CHAR CHAR CHAR E_HEAD6|],'Header6');
 
-		# Mismatch (allowed)
-		$t = PML::Tokenizer->new( pml => '#######head######');
-		_match_tokens($t,[qw|S_BLOCK S_HEAD6 CHAR CHAR CHAR CHAR S_HEAD5 E_BLOCK|]);
+		# TODO Error on mismatched tags		
+		#$t = PML::Tokenizer->new( pml => '#######head######');
+		#_match_tokens($t,[qw|S_BLOCK S_HEAD6 CHAR CHAR CHAR CHAR S_HEAD5 E_BLOCK|],'Mismatched tags');
 		
 		dies_ok { $t = PML::Tokenizer->new( pml => '########head########') }
 				'Die on invalid header string';
+
+	}; return
+}
+
+# ------------------------------------------------------------------------------
+
+sub test__plain_chars {
+	subtest "Test 'plain chars'" => sub {
+				
+		my $t = PML::Tokenizer->new( pml => 'abc');
+		_match_tokens($t, [qw|S_BLOCK CHAR CHAR CHAR E_BLOCK|]);
 
 	}; return
 }
@@ -134,3 +149,20 @@ sub test__get_next_token {
 }
 
 # ------------------------------------------------------------------------------
+
+sub test_util__is_head_block_open {
+	subtest "Test utility _is_head_block_open" => sub {
+
+		my $tokenizer = PML::Tokenizer->new( pml => '');
+
+		$tokenizer->matching_context({});
+		$tokenizer->matching_context->{HEAD1} = 1;
+		is ($tokenizer->_is_head_block_open, 1, "HEAD1 = true");
+
+		$tokenizer->matching_context({});
+		$tokenizer->matching_context->{HEAD1} = 1;
+		$tokenizer->matching_context->{HEAD3} = 1;
+		is ($tokenizer->_is_head_block_open, 1, "HEAD1 + HEAD3 = true");
+
+	}; return;
+}
