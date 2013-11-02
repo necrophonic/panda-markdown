@@ -25,7 +25,7 @@ use_ok "PML";
 	lives_and { is PML::_type_to_tag('EMPHASIS'), 	'em' } 		'EMPHASIS maps to em ok';
 	lives_and { is PML::_type_to_tag('UNDERLINE'), 	'u' } 		'UNDERLINE maps to u ok';
 
-	lives_and { is PML::_type_to_tag('QUOTE'), 		'quote' } 	'QUOTE maps to quote ok';
+	lives_and { is PML::_type_to_tag('QUOTE'), 	'blockquote' } 	'QUOTE maps to blockquote ok';
 
 	dies_ok { PML::_type_to_tag('INVALIDTAG') } 'Dies with invalid tag';
 

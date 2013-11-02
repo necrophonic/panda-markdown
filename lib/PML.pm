@@ -27,7 +27,7 @@ sub _type_to_tag {
 		EMPHASIS	=> 'em',
 		UNDERLINE	=> 'u',
 		BLOCK		=> 'p',
-		QUOTE		=> 'quote',
+		QUOTE		=> 'blockquote',
 	};
 	if (exists $map->{$type}) { return $map->{$type}}
 	die "No mapping for type '$type'";
