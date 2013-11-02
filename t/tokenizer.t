@@ -7,39 +7,13 @@ use Test::Exception;
 
 use_ok "PML::Tokenizer";
 
-my $pml =<<EOT
-##Heading 1##
-###Heading 2###
-####Heading 3####
 
-This is a paragraph.
-Same paragraph.
-
-New paragraph with **bold** text and __underlined__ text and
-//italic// text.
-
-This *isn't* bold
-
-Not a #heading and neither is #this#
-EOT
-;
-
-
-my $tokenizer = new_ok "PML::Tokenizer", [ pml => $pml ];
-
-while(my $token = $tokenizer->get_next_token) {
-	print $token->content;
-}
-print"\n";
-
-
-	test__get_next_token( $tokenizer );
-
+	test__get_next_token();
 
 	test__emphasis();
 	test__strong();
 	test__underline();
-	test__header();
+	test__header_end_of_data();
 
 	#test_newline(); # Test: newline after char, after other tag
 
@@ -49,32 +23,55 @@ exit(0);
 
 # ------------------------------------------------------------------------------
 
-sub test__header {
+sub _match_tokens {
+	my ($tokenizer,$expected_ar) = @_;
+
+	my $token = $tokenizer->get_next_token;
+	my @generated;
+	while($token != 0) {
+		push @generated, $token->type;
+		$token = $tokenizer->get_next_token;
+	}
+
+	my $ok = is_deeply(\@generated, $expected_ar, "Tokens as expected");
+	unless ($ok) {
+		diag("Expected: ",join(",",@$expected_ar));
+		diag("Got:      ",join(",",@generated));
+	}
+}
+
+# ------------------------------------------------------------------------------
+
+sub test__header_end_of_data {
 	subtest "Test '## == header'" => sub {
 				
 		my $t;
 
 		$t = PML::Tokenizer->new( pml => '#head#');
-		is( $t->get_next_token->content . $t->get_next_token->content, '#h', '#h' );
+		_match_tokens($t,[qw|BLOCK CHAR CHAR CHAR CHAR CHAR CHAR BLOCK|]);
 
 		$t = PML::Tokenizer->new( pml => '##head##');
-		is( $t->get_next_token->content . $t->get_next_token->content,, '[[H1]]h', 'HEAD1' );
-		
-		$t = PML::Tokenizer->new( pml => '###head###');		
-		is( $t->get_next_token->content . $t->get_next_token->content,, '[[H2]]h', 'HEAD2' );
+		_match_tokens($t,[qw|BLOCK HEAD1 CHAR CHAR CHAR CHAR HEAD1 BLOCK|]);		
 
-		$t = PML::Tokenizer->new( pml => '####head####');		
-		is( $t->get_next_token->content . $t->get_next_token->content,, '[[H3]]h', 'HEAD3' );
+		$t = PML::Tokenizer->new( pml => '###head###');
+		_match_tokens($t,[qw|BLOCK HEAD2 CHAR CHAR CHAR CHAR HEAD2 BLOCK|]);
 
-		$t = PML::Tokenizer->new( pml => '#####head#####');		
-		is( $t->get_next_token->content . $t->get_next_token->content,, '[[H4]]h', 'HEAD4' );
+		$t = PML::Tokenizer->new( pml => '####head####');
+		_match_tokens($t,[qw|BLOCK HEAD3 CHAR CHAR CHAR CHAR HEAD3 BLOCK|]);
+
+		$t = PML::Tokenizer->new( pml => '#####head#####');
+		_match_tokens($t,[qw|BLOCK HEAD4 CHAR CHAR CHAR CHAR HEAD4 BLOCK|]);
 
 		$t = PML::Tokenizer->new( pml => '######head######');
-		is( $t->get_next_token->content . $t->get_next_token->content,, '[[H5]]h', 'HEAD5' );
+		_match_tokens($t,[qw|BLOCK HEAD5 CHAR CHAR CHAR CHAR HEAD5 BLOCK|]);
 
-		$t = PML::Tokenizer->new( pml => '#######head#######');		
-		is( $t->get_next_token->content . $t->get_next_token->content,, '[[H6]]h', 'HEAD6' );
+		$t = PML::Tokenizer->new( pml => '#######head#######');
+		_match_tokens($t,[qw|BLOCK HEAD6 CHAR CHAR CHAR CHAR HEAD6 BLOCK|]);
 
+		# Mismatch (allowed)
+		$t = PML::Tokenizer->new( pml => '#######head######');
+		_match_tokens($t,[qw|BLOCK HEAD6 CHAR CHAR CHAR CHAR HEAD5 BLOCK|]);
+		
 		dies_ok { $t = PML::Tokenizer->new( pml => '########head########') }
 				'Die on invalid header string';
 
@@ -87,13 +84,7 @@ sub test__emphasis {
 	subtest "Test '// == emphasis'" => sub {
 				
 		my $t = PML::Tokenizer->new( pml => '//abc//');
-
-		is( $t->get_next_token->content, '[[EMPH]]', 'Start with EMPH tag' );
-		is( $t->get_next_token->content, 'a',		 'Char tag [a]'		   );
-		is( $t->get_next_token->content, 'b',		 'Char tag [b]'		   );
-		is( $t->get_next_token->content, 'c',		 'Char tag [c]'		   );
-		is( $t->get_next_token->content, '[[EMPH]]', 'End with EMPH tag'   );
-		is( $t->get_next_token, 		 0, 		 'Finish tokens'   	   );
+		_match_tokens($t, [qw|BLOCK EMPHASIS CHAR CHAR CHAR EMPHASIS BLOCK|]);
 
 	}; return
 }
@@ -104,13 +95,7 @@ sub test__strong {
 	subtest "Test '** == strong'" => sub {
 				
 		my $t = PML::Tokenizer->new( pml => '**abc**');
-
-		is( $t->get_next_token->content, '[[STRONG]]', 'Start with STRONG tag' );
-		is( $t->get_next_token->content, 'a',		   'Char tag [a]'		   );
-		is( $t->get_next_token->content, 'b',		   'Char tag [b]'		   );
-		is( $t->get_next_token->content, 'c',		   'Char tag [c]'		   );
-		is( $t->get_next_token->content, '[[STRONG]]', 'End with STRONG tag'   );
-		is( $t->get_next_token, 		 0, 		   'Finish tokens'   	   );
+		_match_tokens($t, [qw|BLOCK STRONG CHAR CHAR CHAR STRONG BLOCK|]);
 
 	}; return
 }
@@ -121,24 +106,17 @@ sub test__underline {
 	subtest "Test '__ == underline'" => sub {
 				
 		my $t = PML::Tokenizer->new( pml => '__abc__');
-
-		is( $t->get_next_token->content, '[[UNDER]]', 'Start with UNDER tag' );
-		is( $t->get_next_token->content, 'a',		   'Char tag [a]'		   );
-		is( $t->get_next_token->content, 'b',		   'Char tag [b]'		   );
-		is( $t->get_next_token->content, 'c',		   'Char tag [c]'		   );
-		is( $t->get_next_token->content, '[[UNDER]]', 'End with UNDER tag'   );
-		is( $t->get_next_token, 		 0, 		   'Finish tokens'   	   );
+		_match_tokens($t, [qw|BLOCK UNDERLINE CHAR CHAR CHAR UNDERLINE BLOCK|]);
 
 	}; return
 }
 
 # ------------------------------------------------------------------------------
 
-sub test__get_next_token {
-	my ($tokenizer) = @_;
-
+sub test__get_next_token {	
 	subtest "Test method get_next_token" => sub {
 
+		my $tokenizer = PML::Tokenizer->new( pml => '');
 		$tokenizer->tokens([]);
 
 		push @{$tokenizer->tokens}, PML::Tokenizer::Token->new( type=>'CHAR', content => 'abc');

@@ -34,6 +34,9 @@ sub _tokenize {
 	$self->tokens([]);
 
 	my @chars = split //, $self->pml;
+
+	# Start with a BLOCK token
+	$self->_new_token( 'BLOCK', '' );
 	
 	# Parse until we run out of data
 	while (@chars) {
@@ -70,48 +73,21 @@ sub _tokenize {
 			else {
 				# If we've at least reached header level 1 then we
 				# output a header token. Otherwise assume it's just
-				# a hash so output that and what we just read.				
-				if ((my $level = $self->head_level) > 0) {
-					$self->_new_token( "HEAD$level", "[[H$level]]" );
-				}
-				else {
-					# Treat as plain # and whatever we just read
-					$self->_new_token( 'CHAR', '#' );
-				}				
+				# a hash so output that and what we just read.		
+				$self->_finalise_heading;				
 				unshift @chars, $c;
 				$self->_move_to_state('data');
 			}
 
 		}
 		elsif ($self->state eq 'p_strong') {
-
-			if ($c =~ /\*/) { $self->_new_token( 'STRONG', '[[STRONG]]' ); }
-			else {
-				$self->_new_token( 'CHAR', '*' );
-				unshift @chars, $c;				
-			}
-			$self->_move_to_state('data');
-
+			$self->_emit_control_token( $c, 'STRONG', '[[STRONG]]', '*', \@chars );
 		}
 		elsif ($self->state eq 'p_underline') {
-
-			if ($c =~ /_/) { $self->_new_token( 'UNDERLINE', '[[UNDER]]' ); }
-			else {
-				$self->_new_token( 'CHAR', '_' );
-				unshift @chars, $c;								
-			}
-			$self->_move_to_state('data');
-
+			$self->_emit_control_token( $c, 'UNDERLINE', '[[UNDER]]', '_', \@chars );
 		}
 		elsif ($self->state eq 'p_emphasis') {
-
-			if ($c =~ /\//) { $self->_new_token( 'EMPHASIS', '[[EMPH]]' ); }
-			else {
-				$self->_new_token( 'CHAR', '/' );
-				unshift @chars, $c;				
-			}
-			$self->_move_to_state('data');
-
+			$self->_emit_control_token( $c, 'EMPHASIS', '[[EMPH]]', '/', \@chars );
 		}
 		else {
 			$self->_move_to_state('data');
@@ -119,6 +95,43 @@ sub _tokenize {
 		next;
 	}
 
+	# Fix heading at end of input.
+	# Reached end of input so deal with any open header tokens.
+	if ($self->state eq 'p_heading') {
+		$self->_finalise_heading;
+	}
+
+	# Make sure that BLOCKs are closed, so if the last token wasn't a block,
+	# let's emit one.
+	$self->_new_token( 'BLOCK', '' );
+
+	return;
+}
+
+# -----------------------------------------------------------------------------
+
+sub _emit_control_token {
+	my ($self, $char, $type, $content, $plain, $chars_ar) = @_;
+
+	if ($char eq $plain) { $self->_new_token( $type, $content ); }
+	else {
+		$self->_new_token( 'CHAR', $plain );
+		unshift @$chars_ar, $char;				
+	}
+	$self->_move_to_state('data');
+}
+
+# -----------------------------------------------------------------------------
+
+sub _finalise_heading {
+	my ($self) = @_;
+	if ((my $level = $self->head_level) > 0) {
+		$self->_new_token( "HEAD$level", "[[H$level]]" );
+	}
+	else {
+		# Treat as plain # and whatever we just read
+		$self->_new_token( 'CHAR', '#' );
+	}
 	return;
 }
 

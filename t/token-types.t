@@ -12,6 +12,7 @@ for (qw|
 		EMPHASIS
 		UNDERLINE
 		HEAD1 HEAD2 HEAD3 HEAD4 HEAD5 HEAD6
+		BLOCK
 	|) {
 	lives_ok { PML::Tokenizer::Token->new( type => $_ ) } "Type [$_] is valid";
 }

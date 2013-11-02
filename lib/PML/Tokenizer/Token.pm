@@ -18,6 +18,7 @@ sub validate_type {
 		EMPHASIS	1
 		UNDERLINE	1
 		HEAD1 1 HEAD2 1 HEAD3 1 HEAD4 1 HEAD5 1 HEAD6 1
+		BLOCK		1
 	);
 
 	die "Token type '$val' not valid" unless exists $types{$val};

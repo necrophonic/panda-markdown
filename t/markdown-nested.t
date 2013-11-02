@@ -18,7 +18,7 @@ EOT
 ;
 
 my $expect =<<EOT
-This has some <strong>bold</strong> and some <em>italic</em> and some <em><strong>bold italic</strong></em>
+<p>This has some <strong>bold</strong> and some <em>italic</em> and some <em><strong>bold italic</strong></em> </p>
 EOT
 ;
 

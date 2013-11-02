@@ -14,7 +14,9 @@ use PML::Tokenizer;
 # ------------------------------------------------------------------------------
 
 sub _type_to_tag {
-	return {
+	my ($type) = @_;	
+	$type ||= '';
+	my $map = {
 		HEAD1		=> 'h1',
 		HEAD2		=> 'h2',
 		HEAD3		=> 'h3',
@@ -23,8 +25,11 @@ sub _type_to_tag {
 		HEAD6		=> 'h6',
 		STRONG		=> 'strong',
 		EMPHASIS	=> 'em',
-		UNDERLINE	=> 'u'
+		UNDERLINE	=> 'u',
+		BLOCK		=> 'p'
 	};
+	if (exists $map->{$type}) { return $map->{$type}}
+	die "No mapping for type '$type'";
 }
 
 # ------------------------------------------------------------------------------
@@ -37,6 +42,10 @@ sub markdown {
 	# interpretable HTML.
 	$pml = HTML::Escape::escape_html($pml);
 
+	
+	$pml =~ s/^ *//g; # Leading spaces
+	$pml =~ s/ *$//g; # Trailing spaces
+
 	my $tokenizer = PML::Tokenizer->new( pml => $pml );
 
 	# Initialise stack for nested tag matching	
@@ -46,6 +55,7 @@ sub markdown {
 
 	while(my $token = $tokenizer->get_next_token) {
 
+
 		my $type = $token->type;
 
 		if ($type eq 'CHAR') { $html .= $token->content }
@@ -54,11 +64,11 @@ sub markdown {
 			# the stack then we pop that off and output a
 			# closing version. Otherwise we output an
 			# opening version and push onto the stack.
-			if (@stack && $stack[0] eq $type) {
+			if (@stack && $stack[0] eq $type) {				
 				$html .= _end_type($type);
 				shift @stack;
 			}
-			else {
+			else {				
 				$html .= _start_type($type);
 				unshift @stack, $type;
 			}
@@ -66,16 +76,14 @@ sub markdown {
 	}
 
 	$html =~ s/ +/ /g; # Multiple spaces
-	$html =~ s/^ *//g; # Leading spaces
-	$html =~ s/ *$//g; # Trailing spaces
 
 	return "$html\n";
 }
 
 # ------------------------------------------------------------------------------
 
-sub _start_type { return '<' ._type_to_tag->{$_[0]}.'>' }
-sub _end_type   { return '</'._type_to_tag->{$_[0]}.'>' }
+sub _start_type { return '<' ._type_to_tag($_[0]).'>' }
+sub _end_type   { return '</'._type_to_tag($_[0]).'>' }
 
 # ------------------------------------------------------------------------------
 
