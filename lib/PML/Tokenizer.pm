@@ -59,6 +59,7 @@ sub _tokenize {
 			elsif ($c eq '/') { $self->_move_to_state('p_emphasis')  }
 			elsif ($c eq '*') { $self->_move_to_state('p_strong')  	 }
 			elsif ($c eq '_') { $self->_move_to_state('p_underline') }
+			elsif ($c eq '"') { $self->_move_to_state('p_quote') 	 }
 			elsif ($c eq ' ') {
 				# If we're in a block, output it, otherwise skip it
 				if ($self->_is_block_open || $self->_is_head_block_open) {
@@ -74,9 +75,10 @@ sub _tokenize {
 			}
 
 		}
-		elsif ($state eq 'p_strong') 	{ $self->_emit_control_token( $c, 'STRONG', '[[STRONG]]', '*', \@chars )	}
-		elsif ($state eq 'p_underline') { $self->_emit_control_token( $c, 'UNDERLINE', '[[UNDER]]', '_', \@chars )	}	
-		elsif ($state eq 'p_emphasis')  { $self->_emit_control_token( $c, 'EMPHASIS', '[[EMPH]]', '/', \@chars )	}
+		elsif ($state eq 'p_strong') 	{ $self->_emit_control_token( $c, 'STRONG', 	'[[STRONG]]', '*', \@chars ) }
+		elsif ($state eq 'p_underline') { $self->_emit_control_token( $c, 'UNDERLINE',  '[[UNDER]]',  '_', \@chars ) }	
+		elsif ($state eq 'p_emphasis')  { $self->_emit_control_token( $c, 'EMPHASIS', 	'[[EMPH]]',   '/', \@chars ) }
+		elsif ($state eq 'p_quote')  	{ $self->_emit_control_token( $c, 'QUOTE', 		'[[QUOTE]]',  '"', \@chars ) }
 		elsif ($state eq 'p_heading') {
 
 			if ($c eq '#') {

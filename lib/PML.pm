@@ -26,7 +26,8 @@ sub _type_to_tag {
 		STRONG		=> 'strong',
 		EMPHASIS	=> 'em',
 		UNDERLINE	=> 'u',
-		BLOCK		=> 'p'
+		BLOCK		=> 'p',
+		QUOTE		=> 'quote',
 	};
 	if (exists $map->{$type}) { return $map->{$type}}
 	die "No mapping for type '$type'";
@@ -40,7 +41,10 @@ sub markdown {
 
 	# Clean the PML before we start as we don't allow 
 	# interpretable HTML.
-	$pml = HTML::Escape::escape_html($pml);
+	$pml = HTML::Escape::escape_html($pml);	
+
+	# Fix "quot"s
+	$pml =~ s/\&quot;/\"/g;
 
 	
 	$pml =~ s/^ *//g; # Leading spaces

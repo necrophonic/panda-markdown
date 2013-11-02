@@ -14,6 +14,7 @@ use_ok "PML::Tokenizer";
 	test__emphasis();
 	test__strong();
 	test__underline();
+	test__quote();
 	test__header_end_of_data();
 
 	test_util__is_head_block_open();
@@ -99,7 +100,7 @@ sub test__emphasis {
 	subtest "Test '// == emphasis'" => sub {
 				
 		my $t = PML::Tokenizer->new( pml => '//abc//');
-		_match_tokens($t, [qw|S_BLOCK S_EMPHASIS CHAR CHAR CHAR E_EMPHASIS E_BLOCK|]);
+		_match_tokens($t, [qw|S_BLOCK S_EMPHASIS CHAR CHAR CHAR E_EMPHASIS E_BLOCK|],"Emphasis");
 
 	}; return
 }
@@ -110,7 +111,18 @@ sub test__strong {
 	subtest "Test '** == strong'" => sub {
 				
 		my $t = PML::Tokenizer->new( pml => '**abc**');
-		_match_tokens($t, [qw|S_BLOCK S_STRONG CHAR CHAR CHAR E_STRONG E_BLOCK|]);
+		_match_tokens($t, [qw|S_BLOCK S_STRONG CHAR CHAR CHAR E_STRONG E_BLOCK|],"Strong");
+
+	}; return
+}
+
+# ------------------------------------------------------------------------------
+
+sub test__quote {
+	subtest "Test '\"\" == quote'" => sub {
+				
+		my $t = PML::Tokenizer->new( pml => '""abc""');
+		_match_tokens($t, [qw|S_BLOCK S_QUOTE CHAR CHAR CHAR E_QUOTE E_BLOCK|],"Quote");
 
 	}; return
 }
@@ -121,7 +133,7 @@ sub test__underline {
 	subtest "Test '__ == underline'" => sub {
 				
 		my $t = PML::Tokenizer->new( pml => '__abc__');
-		_match_tokens($t, [qw|S_BLOCK S_UNDERLINE CHAR CHAR CHAR E_UNDERLINE E_BLOCK|]);
+		_match_tokens($t, [qw|S_BLOCK S_UNDERLINE CHAR CHAR CHAR E_UNDERLINE E_BLOCK|],"Underline");
 
 	}; return
 }
