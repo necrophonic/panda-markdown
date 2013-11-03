@@ -5,7 +5,7 @@ A markdown type language and processor for blog postings.
 
 ## Vision ##
 
-To develop a simple markdown language that will facilitate easy creation of rich blog postings.
+To develop a simple markdown language that will facilitate easy creation of rich blog postings beyond the scope of vanilla markdown.
 
 ### Markdown ###
 
