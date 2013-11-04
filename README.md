@@ -22,4 +22,5 @@ Simple markdown implemented so far. Maps to standard HTML tags.
   - ##### - head 4
   - ###### - head 5
   - ####### - head 6
+  - \n\n - new paragraph
 ```
