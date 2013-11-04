@@ -39,7 +39,6 @@ sub _tokenize {
 	$self->tokens([]);
 
 	my @chars = split //, $self->pml;
-
 	
 	# Parse until we run out of data
 	while (@chars) {
@@ -60,6 +59,7 @@ sub _tokenize {
 			elsif ($c eq '*') { $self->_move_to_state('p_strong')  	 }
 			elsif ($c eq '_') { $self->_move_to_state('p_underline') }
 			elsif ($c eq '"') { $self->_move_to_state('p_quote') 	 }
+			elsif ($c eq "\n"){ $self->_move_to_state('p_newpara')	 }
 			elsif ($c eq ' ') {
 				# If we're in a block, output it, otherwise skip it
 				if ($self->_is_block_open || $self->_is_head_block_open) {
@@ -79,6 +79,25 @@ sub _tokenize {
 		elsif ($state eq 'p_underline') { $self->_emit_control_token( $c, 'UNDERLINE',  '[[UNDER]]',  '_', \@chars ) }	
 		elsif ($state eq 'p_emphasis')  { $self->_emit_control_token( $c, 'EMPHASIS', 	'[[EMPH]]',   '/', \@chars ) }
 		elsif ($state eq 'p_quote')  	{ $self->_emit_control_token( $c, 'QUOTE', 		'[[QUOTE]]',  '"', \@chars ) }
+		elsif ($state eq 'p_newpara')  	{
+
+			if ($c eq "\n") {
+				# If were in a block, close it
+				if ($self->_is_block_open) {
+					$self->_new_token( 'E_BLOCK', '[[E_BLOCK]]' );
+					#$self->_new_token( 'CHAR', '%' );
+				}
+			}
+			else {
+				$self->_new_token( 'CHAR', "\n" );
+				unshift @chars, $c;
+				
+			}
+			$self->_move_to_state('data');
+
+			
+			#$self->_new_token( 'CHAR', 'xxBLOCKxx' );
+		}
 		elsif ($state eq 'p_heading') {
 
 			if ($c eq '#') {
@@ -235,7 +254,7 @@ sub get_next_token {
 
 # -----------------------------------------------------------------------------
 
-sub D {say @_ if $debug}
+sub D {warn @_ if $debug}
 
 1;
 

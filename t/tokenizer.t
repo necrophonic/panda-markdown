@@ -16,10 +16,9 @@ use_ok "PML::Tokenizer";
 	test__underline();
 	test__quote();
 	test__header_end_of_data();
+	test__newpara();
 
-	test_util__is_head_block_open();
-
-	#test_newline(); # Test: newline after char, after other tag
+	#test_util__is_head_block_open();
 
 
 done_testing();
@@ -91,7 +90,18 @@ sub test__plain_chars {
 		my $t = PML::Tokenizer->new( pml => 'abc');
 		_match_tokens($t, [qw|S_BLOCK CHAR CHAR CHAR E_BLOCK|]);
 
-	}; return
+	}; return;
+}
+
+# ------------------------------------------------------------------------------
+
+sub test__newpara {
+	subtest "Test '\\n\\n == new para'" => sub {
+
+		my $t = PML::Tokenizer->new( pml => "ab\n\ncd" );
+		_match_tokens($t, [qw|S_BLOCK CHAR CHAR E_BLOCK S_BLOCK CHAR CHAR E_BLOCK|], "New paragraph");
+
+	}; return;
 }
 
 # ------------------------------------------------------------------------------
@@ -102,7 +112,7 @@ sub test__emphasis {
 		my $t = PML::Tokenizer->new( pml => '//abc//');
 		_match_tokens($t, [qw|S_BLOCK S_EMPHASIS CHAR CHAR CHAR E_EMPHASIS E_BLOCK|],"Emphasis");
 
-	}; return
+	}; return;
 }
 
 # ------------------------------------------------------------------------------
