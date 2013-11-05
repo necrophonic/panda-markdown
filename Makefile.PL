@@ -24,5 +24,6 @@ WriteMakefile(
 	},
 	test 			=> {
 		TESTS	=> 't/*.t'
-	}
+	},
+	'dist'          => { COMPRESS => "gzip -9", SUFFIX => "gz" },
 );
