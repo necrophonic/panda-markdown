@@ -23,4 +23,9 @@ Simple markdown implemented so far. Maps to standard HTML tags.
   - ###### - head 5
   - ####### - head 6
   - \n\n - new paragraph
+  
+  - [[<url>]] - <a href="url">url</a>
+  - [[<url>|<text>]] - <a href="url">text</a>
+  
+  - {{/assets/image.jpg}} - <img src="/assets/image.jpg">
 ```
