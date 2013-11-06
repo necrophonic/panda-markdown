@@ -60,6 +60,8 @@ sub _tokenize {
 			elsif ($c eq '_') { $self->_move_to_state('p_underline') }
 			elsif ($c eq '"') { $self->_move_to_state('p_quote') 	 }
 			elsif ($c eq "\n"){ $self->_move_to_state('p_newpara')	 }
+			elsif ($c eq '[') { $self->_move_to_state('p_s_link')	 }
+			elsif ($c eq ']') { $self->_move_to_state('p_e_link')  	 }
 			elsif ($c eq ' ') {
 				# If we're in a block, output it, otherwise skip it
 				if ($self->_is_block_open || $self->_is_head_block_open) {
@@ -71,32 +73,30 @@ sub _tokenize {
 				if (!$self->_is_block_open && !$self->_is_head_block_open) {
 					$self->_new_token('S_BLOCK','[[S_BLOCK]]');
 				}
-				$self->_new_char_token( $c )
+				$self->_new_char_token( $c );
 			}
 
 		}
 		elsif ($state eq 'p_strong') 	{ $self->_emit_control_token( $c, 'STRONG', 	'[[STRONG]]', '*', \@chars ) }
 		elsif ($state eq 'p_underline') { $self->_emit_control_token( $c, 'UNDERLINE',  '[[UNDER]]',  '_', \@chars ) }	
 		elsif ($state eq 'p_emphasis')  { $self->_emit_control_token( $c, 'EMPHASIS', 	'[[EMPH]]',   '/', \@chars ) }
-		elsif ($state eq 'p_quote')  	{ $self->_emit_control_token( $c, 'QUOTE', 		'[[QUOTE]]',  '"', \@chars ) }
+		elsif ($state eq 'p_quote')  	{ $self->_emit_control_token( $c, 'QUOTE', 		'[[QUOTE]]',  '"', \@chars ) }		
+		elsif ($state eq 'p_s_link')  	{ $self->_emit_control_token( $c, 'S_LINK', 	'[[S_LINK]]', '[', \@chars ) }
+		elsif ($state eq 'p_e_link')  	{ $self->_emit_control_token( $c, 'E_LINK', 	'[[E_LINK]]', ']', \@chars ) }
 		elsif ($state eq 'p_newpara')  	{
 
 			if ($c eq "\n") {
 				# If were in a block, close it
 				if ($self->_is_block_open) {
-					$self->_new_token( 'E_BLOCK', '[[E_BLOCK]]' );
-					#$self->_new_token( 'CHAR', '%' );
+					$self->_new_token( 'E_BLOCK', '[[E_BLOCK]]' );					
 				}
 			}
 			else {
-				$self->_new_token( 'CHAR', "\n" );
-				unshift @chars, $c;
-				
+				$self->_new_char_token( "\n" );
+				unshift @chars, $c;				
 			}
 			$self->_move_to_state('data');
 
-			
-			#$self->_new_token( 'CHAR', 'xxBLOCKxx' );
 		}
 		elsif ($state eq 'p_heading') {
 
@@ -147,7 +147,14 @@ sub _emit_control_token {
 		# If there isn't a block open, then we need to open on		
 		$self->_new_token( 'S_BLOCK', '[[S_BLOCK]]') unless $self->_is_block_open;		
 
-		$self->_new_token( ($self->_is_open($type) ?'E':'S')."_$type", $content );		
+		# If the token isn't already listed as Start or End then
+		# determine which we need.
+		if ($type =~ /^(E|S)_/) {
+			$self->_new_token( $type, $content );
+		}
+		else {
+			$self->_new_token( ($self->_is_open($type) ?'E':'S')."_$type", $content );		
+		}
 	}
 	else {
 		# If not a match then output the potential
@@ -212,6 +219,14 @@ sub _new_char_token {
 
 # -----------------------------------------------------------------------------
 
+sub _new_link_token {
+	my ($self, $href, $text) = @_;
+	# TODO
+	return;
+}
+
+# -----------------------------------------------------------------------------
+
 sub _new_token {
 	my ($self, $type, $content) = @_;
 	
@@ -224,6 +239,7 @@ sub _new_token {
 		$self->matching_context->{$specific_type}++;
 		D(" -> Update matching for '$specific_type'");
 	}
+
 
 	push @{$self->tokens},
 		 PML::Tokenizer::Token->new( type => $type, content => $content );
