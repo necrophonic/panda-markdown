@@ -19,6 +19,8 @@ has 'state'		 => ( is => 'rw' );
 has 'content'	 => ( is => 'rw' );
 has 'head_level' => ( is => 'rw' );
 
+has 'link_data'	 => ( is => 'rw' );
+
 # Matching contexts
 has 'matching_context' => ( is => 'rw' );
 
@@ -60,8 +62,7 @@ sub _tokenize {
 			elsif ($c eq '_') { $self->_move_to_state('p_underline') }
 			elsif ($c eq '"') { $self->_move_to_state('p_quote') 	 }
 			elsif ($c eq "\n"){ $self->_move_to_state('p_newpara')	 }
-			elsif ($c eq '[') { $self->_move_to_state('p_s_link')	 }
-			elsif ($c eq ']') { $self->_move_to_state('p_e_link')  	 }
+			elsif ($c eq '[') { $self->_move_to_state('p_s_link')    }			
 			elsif ($c eq ' ') {
 				# If we're in a block, output it, otherwise skip it
 				if ($self->_is_block_open || $self->_is_head_block_open) {
@@ -81,9 +82,52 @@ sub _tokenize {
 		elsif ($state eq 'p_underline') { $self->_emit_control_token( $c, 'UNDERLINE',  '[[UNDER]]',  '_', \@chars ) }	
 		elsif ($state eq 'p_emphasis')  { $self->_emit_control_token( $c, 'EMPHASIS', 	'[[EMPH]]',   '/', \@chars ) }
 		elsif ($state eq 'p_quote')  	{ $self->_emit_control_token( $c, 'QUOTE', 		'[[QUOTE]]',  '"', \@chars ) }		
-		elsif ($state eq 'p_s_link')  	{ $self->_emit_control_token( $c, 'S_LINK', 	'[[S_LINK]]', '[', \@chars ) }
-		elsif ($state eq 'p_e_link')  	{ $self->_emit_control_token( $c, 'E_LINK', 	'[[E_LINK]]', ']', \@chars ) }
-		elsif ($state eq 'p_newpara')  	{
+		elsif ($state eq 'p_s_link')  	{
+
+			if ($c eq '[') {
+				$self->_move_to_state('link_data');
+				$self->link_data('');
+			}
+			else {
+				$self->_new_char_token( '[' );
+				unshift @chars, $c;
+			}
+			next;
+
+		}		
+		elsif ($state eq 'link_data') {
+
+			if ( $c eq ']' ) {
+				$self->_move_to_state( 'p_e_link' );
+				next;
+			}
+			else {
+				# Whilst in 'link_data' state, treat anything other than
+				# link closing tags as char data into the temporary link data.				
+				$self->link_data( $self->link_data.$c );
+				next;
+			}
+
+		}
+		elsif ($state eq 'p_e_link') {
+
+			if ($c eq ']') {
+				# Finish the link token
+				D(" -> Write link token [",$self->link_data,"]");
+				$self->_new_token( 'LINK', $self->link_data);
+				$self->_move_to_state('data');	
+			}
+			else {
+				# Otherwise still in the link data so add
+				# the char to the current link data and move
+				# to consume the next char.
+				$self->link_data( $self->link_data.$c );
+				unshift @chars, $c;
+			}
+
+			
+		}
+		elsif ($state eq 'p_newpara') {
 
 			if ($c eq "\n") {
 				# If were in a block, close it
@@ -214,14 +258,6 @@ sub _finalise_heading {
 sub _new_char_token {
 	my ($self, $content) = @_;
 	$self->_new_token('CHAR',$content);
-	return;
-}
-
-# -----------------------------------------------------------------------------
-
-sub _new_link_token {
-	my ($self, $href, $text) = @_;
-	# TODO
 	return;
 }
 

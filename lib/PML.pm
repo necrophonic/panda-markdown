@@ -2,7 +2,7 @@ package PML;
 
 use v5.10;
 
-our $VERSION = '0.2';
+our $VERSION = '0.3';
 
 use strict;
 use warnings;
@@ -28,6 +28,7 @@ sub _type_to_tag {
 		UNDERLINE	=> 'u',
 		BLOCK		=> 'p',
 		QUOTE		=> 'blockquote',
+		LINK		=> 'a',
 	};
 	if (exists $map->{$type}) { return $map->{$type}}
 	die "No mapping for type '$type'";
@@ -61,7 +62,16 @@ sub markdown {
 
 		my $type = $token->type;		
 
-		if ($type eq 'CHAR') { $html .= $token->content }
+		if 	  ($type eq 'CHAR') { $html .= $token->content }
+		elsif ($type eq 'LINK') {
+
+			# Parse the content data to get the text alternative (if defined)
+			my ($href,$text) = split /\|/, $token->content;
+			$text ||= $href;
+
+			$html .= qq|<a href="$href">$text</a>|;
+
+		}
 		else {			
 
 			my ($start_end, $item) = $type =~ /^(S|E)_(.+)$/;

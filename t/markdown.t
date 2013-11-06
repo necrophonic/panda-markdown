@@ -35,6 +35,13 @@ is(
 	,"New paragraphs"
 );
 
+note("Test 5 - link");
+is(
+	PML::markdown(qq!Click [[http://google.com|here]]!)
+	,qq|<p>Click <a href="http://google.com">here</a></p>\n|
+	,"Simple link"
+);
+
 done_testing();
 exit(0);
 

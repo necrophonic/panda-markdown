@@ -15,6 +15,7 @@ for (qw|
 		S_HEAD1 S_HEAD2 S_HEAD3 S_HEAD4 S_HEAD5 S_HEAD6
 		E_HEAD1 E_HEAD2 E_HEAD3 E_HEAD4 E_HEAD5 E_HEAD6
 		S_BLOCK E_BLOCK
+		LINK
 	|) {
 	lives_ok { PML::Tokenizer::Token->new( type => $_ ) } "Type [$_] is valid";
 }
