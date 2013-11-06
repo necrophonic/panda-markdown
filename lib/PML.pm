@@ -68,8 +68,13 @@ sub markdown {
 			# Parse the content data to get the text alternative (if defined)
 			my ($href,$text) = split /\|/, $token->content;
 			$text ||= $href;
-
 			$html .= qq|<a href="$href">$text</a>|;
+
+		}
+		elsif ($type eq 'IMAGE') {
+			
+			my $src = $token->content;			
+			$html .= qq|<img src="$src">|;
 
 		}
 		else {			

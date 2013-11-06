@@ -16,6 +16,7 @@ for (qw|
 		E_HEAD1 E_HEAD2 E_HEAD3 E_HEAD4 E_HEAD5 E_HEAD6
 		S_BLOCK E_BLOCK
 		LINK
+		IMAGE
 	|) {
 	lives_ok { PML::Tokenizer::Token->new( type => $_ ) } "Type [$_] is valid";
 }

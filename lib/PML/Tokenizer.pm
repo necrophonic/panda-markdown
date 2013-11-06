@@ -20,6 +20,7 @@ has 'content'	 => ( is => 'rw' );
 has 'head_level' => ( is => 'rw' );
 
 has 'link_data'	 => ( is => 'rw' );
+has 'image_data' => ( is => 'rw' );
 
 # Matching contexts
 has 'matching_context' => ( is => 'rw' );
@@ -62,7 +63,8 @@ sub _tokenize {
 			elsif ($c eq '_') { $self->_move_to_state('p_underline') }
 			elsif ($c eq '"') { $self->_move_to_state('p_quote') 	 }
 			elsif ($c eq "\n"){ $self->_move_to_state('p_newpara')	 }
-			elsif ($c eq '[') { $self->_move_to_state('p_s_link')    }			
+			elsif ($c eq '[') { $self->_move_to_state('p_s_link')    }	
+			elsif ($c eq '{') { $self->_move_to_state('p_s_image')	 }
 			elsif ($c eq ' ') {
 				# If we're in a block, output it, otherwise skip it
 				if ($self->_is_block_open || $self->_is_head_block_open) {
@@ -81,8 +83,53 @@ sub _tokenize {
 		elsif ($state eq 'p_strong') 	{ $self->_emit_control_token( $c, 'STRONG', 	'[[STRONG]]', '*', \@chars ) }
 		elsif ($state eq 'p_underline') { $self->_emit_control_token( $c, 'UNDERLINE',  '[[UNDER]]',  '_', \@chars ) }	
 		elsif ($state eq 'p_emphasis')  { $self->_emit_control_token( $c, 'EMPHASIS', 	'[[EMPH]]',   '/', \@chars ) }
-		elsif ($state eq 'p_quote')  	{ $self->_emit_control_token( $c, 'QUOTE', 		'[[QUOTE]]',  '"', \@chars ) }		
-		elsif ($state eq 'p_s_link')  	{
+		elsif ($state eq 'p_quote')  	{ $self->_emit_control_token( $c, 'QUOTE', 		'[[QUOTE]]',  '"', \@chars ) }
+		elsif ($state eq 'p_s_image')	{
+
+			if ($c eq '{') {
+				$self->_move_to_state('image_data');
+				$self->image_data('');				
+			}
+			else {
+				$self->_new_char_token( '{' );
+				unshift @chars, $c;				
+			}
+			next;
+
+		}
+		elsif ($state eq 'image_data') {
+
+			if ($c eq '}') {
+				# Definitely starting an image now, so if there's an open block, close it.
+				$self->_close_block_if_open;
+				$self->_move_to_state( 'p_e_image' );
+			}
+			else {
+				$self->image_data( $self->image_data.$c );
+			}
+			next;
+
+		}
+		elsif ($state eq 'p_e_image') {
+
+			if ($c eq '}') {
+				# Finish the image token
+				D(" -> Write image token [",$self->image_data,"]");
+				$self->_new_token( 'IMAGE', $self->image_data);
+				$self->_move_to_state('data');	
+				next;
+			}
+			else {
+				# Otherwise still in the image data so add
+				# the char to the current image data and move
+				# to consume the next char.
+				$self->image_data( $self->image_data.$c );
+				unshift @chars, $c;
+				next;
+			}
+
+		}
+		elsif ($state eq 'p_s_link') {
 
 			if ($c eq '[') {
 				$self->_move_to_state('link_data');
@@ -124,16 +171,12 @@ sub _tokenize {
 				$self->link_data( $self->link_data.$c );
 				unshift @chars, $c;
 			}
-
 			
 		}
 		elsif ($state eq 'p_newpara') {
 
 			if ($c eq "\n") {
-				# If were in a block, close it
-				if ($self->_is_block_open) {
-					$self->_new_token( 'E_BLOCK', '[[E_BLOCK]]' );					
-				}
+				$self->_close_block_if_open;				
 			}
 			else {
 				$self->_new_char_token( "\n" );
@@ -207,6 +250,13 @@ sub _emit_control_token {
 		unshift @$chars_ar, $char;				
 	}
 	$self->_move_to_state('data');
+}
+
+# -----------------------------------------------------------------------------
+
+sub _close_block_if_open {	 
+	$_[0]->_new_token( 'E_BLOCK', '[[E_BLOCK]]' ) if $_[0]->_is_block_open;	
+	return;
 }
 
 # -----------------------------------------------------------------------------
