@@ -28,4 +28,5 @@ Simple markdown implemented so far. Maps to standard HTML tags.
   - [[<url>|<text>]] - <a href="url">text</a>
   
   - {{/assets/image.jpg}} - <img src="/assets/image.jpg">
+  - {{/assets/image.jpg|<<,H50,W50}} - <img class="pulled-left" src="/assets/image.jpg" height="50px" width="50px">
 ```
