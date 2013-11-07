@@ -1,4 +1,8 @@
 
+0.4 2013-11-07
+	- Add float and size options to images
+	
+
 0.3	2013-11-06
 	- Adds simple url support
 	- Adds simple image support
