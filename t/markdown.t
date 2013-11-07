@@ -45,19 +45,25 @@ is(
 
 is(
 	PML::markdown(qq!{{http://test.com/images/abc.png}}!)
-	,qq|<img src="http://test.com/images/abc.png">\n|
-	,"Simple image - absolute"
+	,qq|<img class="pulled-right" src="http://test.com/images/abc.png">\n|
+	,"Simple image"
+);
+
+is(
+	PML::markdown(qq!{{/images/abc.png|<<,H50,W50}}!)
+	,qq|<img class="pulled-left" src="/images/abc.png" height="50px" width="50px">\n|
+	,"Image with options"
 );
 
 is(
 	PML::markdown(qq!{{/images/abc.png}}!)
-	,qq|<img src="/images/abc.png">\n|
-	,"Simple image - relative"
+	,qq|<img class="pulled-right" src="/images/abc.png">\n|
+	,"Simple image"
 );
 
 is(
 	PML::markdown(qq!See this:{{/images/abc.png}}Nice, wasn't it?!)
-	,qq|<p>See this:</p><img src="/images/abc.png"><p>Nice, wasn&#39;t it?</p>\n|
+	,qq|<p>See this:</p><img class="pulled-right" src="/images/abc.png"><p>Nice, wasn&#39;t it?</p>\n|
 	,"Image surrounded by blocks"
 );
 

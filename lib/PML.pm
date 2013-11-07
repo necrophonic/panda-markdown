@@ -2,7 +2,7 @@ package PML;
 
 use v5.10;
 
-our $VERSION = '0.3';
+our $VERSION = '0.4';
 
 use strict;
 use warnings;
@@ -73,8 +73,22 @@ sub markdown {
 		}
 		elsif ($type eq 'IMAGE') {
 			
-			my $src = $token->content;			
-			$html .= qq|<img src="$src">|;
+			my ($src,$options) = split /\|/, $token->content;		
+
+			my $class = 'pulled-right';
+			my $width  = '';
+			my $height = '';
+
+			if ($options) {				
+				foreach my $opt (split /,/,$options) {
+					if 	  ($opt eq '&lt;&lt;') { $class="pulled-left" } # NB. the chevrons are encoded before we get them
+					elsif ($opt eq '&gt;&gt;') { $class="pulled-right"}
+					elsif ($opt =~ /^H(\d+)/ ) { $height = qq| height="$1px"| }
+					elsif ($opt =~ /^W(\d+)/ ) { $width  = qq| width="$1px"| }
+				}
+			}
+
+			$html .= qq|<img class="$class" src="$src"$height$width>|;
 
 		}
 		else {			
