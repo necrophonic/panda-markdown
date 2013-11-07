@@ -75,20 +75,20 @@ sub markdown {
 			
 			my ($src,$options) = split /\|/, $token->content;		
 
-			my $class = 'pulled-right';
+			my $class  = '';
 			my $width  = '';
 			my $height = '';
 
 			if ($options) {				
 				foreach my $opt (split /,/,$options) {
-					if 	  ($opt eq '&lt;&lt;') { $class="pulled-left" } # NB. the chevrons are encoded before we get them
-					elsif ($opt eq '&gt;&gt;') { $class="pulled-right"}
+					if 	  ($opt eq '&lt;&lt;') { $class  = q| class="pulled-left"| } # NB. the chevrons are encoded before we get them
+					elsif ($opt eq '&gt;&gt;') { $class  = q| class="pulled-right"|}
 					elsif ($opt =~ /^H(\d+)/ ) { $height = qq| height="$1px"| }
 					elsif ($opt =~ /^W(\d+)/ ) { $width  = qq| width="$1px"| }
 				}
 			}
 
-			$html .= qq|<img class="$class" src="$src"$height$width>|;
+			$html .= qq|<img$class src="$src"$height$width>|;
 
 		}
 		else {			

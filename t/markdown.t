@@ -45,7 +45,7 @@ is(
 
 is(
 	PML::markdown(qq!{{http://test.com/images/abc.png}}!)
-	,qq|<img class="pulled-right" src="http://test.com/images/abc.png">\n|
+	,qq|<img src="http://test.com/images/abc.png">\n|
 	,"Simple image"
 );
 
@@ -57,13 +57,13 @@ is(
 
 is(
 	PML::markdown(qq!{{/images/abc.png}}!)
-	,qq|<img class="pulled-right" src="/images/abc.png">\n|
+	,qq|<img src="/images/abc.png">\n|
 	,"Simple image"
 );
 
 is(
 	PML::markdown(qq!See this:{{/images/abc.png}}Nice, wasn't it?!)
-	,qq|<p>See this:</p><img class="pulled-right" src="/images/abc.png"><p>Nice, wasn&#39;t it?</p>\n|
+	,qq|<p>See this:</p><img src="/images/abc.png"><p>Nice, wasn&#39;t it?</p>\n|
 	,"Image surrounded by blocks"
 );
 
