@@ -38,7 +38,7 @@ is(
 
 is(
 	PML::markdown(qq!Click [[http://google.com|here]]!)
-	,qq|<p>Click <a href="http://google.com">here</a></p>\n|
+	,qq|<p>Click <a href="http://google.com" target="_new">here</a></p>\n|
 	,"Simple link"
 );
 
