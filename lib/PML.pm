@@ -2,7 +2,7 @@ package PML;
 
 use v5.10;
 
-our $VERSION = '0.4';
+our $VERSION = '0.5';
 
 use strict;
 use warnings;
