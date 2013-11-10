@@ -27,6 +27,8 @@ use_ok "PML";
 
 	lives_and { is PML::_type_to_tag('QUOTE'), 	'blockquote' } 	'QUOTE maps to blockquote ok';
 
+	lives_and { is PML::_type_to_tag('BREAK'), 	'br' } 	'BREAK maps to br ok';
+
 	dies_ok { PML::_type_to_tag('INVALIDTAG') } 'Dies with invalid tag';
 
 

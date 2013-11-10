@@ -17,11 +17,7 @@ and some //**bold italic**//
 EOT
 ;
 
-my $expect =<<EOT
-<p>This has some <strong>bold</strong> and some <em>italic</em>
-and some <em><strong>bold italic</strong></em></p>
-EOT
-;
+my $expect = qq|<p>This has some <strong>bold</strong> and some <em>italic</em><br>and some <em><strong>bold italic</strong></em></p>\n|;
 
 my $html = PML::markdown($in);
 

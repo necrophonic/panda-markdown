@@ -17,6 +17,7 @@ for (qw|
 		S_BLOCK E_BLOCK
 		LINK
 		IMAGE
+		BREAK
 	|) {
 	lives_ok { PML::Tokenizer::Token->new( type => $_ ) } "Type [$_] is valid";
 }

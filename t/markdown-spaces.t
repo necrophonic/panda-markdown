@@ -12,7 +12,7 @@ my $expect;
 
 # TEST 1
 $in		= "This has  some   spaces     in        it\nand   newlines   with spaces.";
-$expect = "<p>This has some spaces in it\nand newlines with spaces.</p>\n";
+$expect = "<p>This has some spaces in it<br>and newlines with spaces.</p>\n";
 is(PML::markdown($in), $expect, 'Mixed spaces ok');
 
 # TEST 2

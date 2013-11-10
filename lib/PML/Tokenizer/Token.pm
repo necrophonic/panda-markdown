@@ -23,6 +23,7 @@ sub validate_type {
 		S_BLOCK	1 E_BLOCK 1
 		LINK 1
 		IMAGE 1
+		BREAK 1
 	);
 
 	die "Token type '$val' not valid" unless exists $types{$val};

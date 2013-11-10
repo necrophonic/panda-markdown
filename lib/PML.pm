@@ -29,6 +29,7 @@ sub _type_to_tag {
 		BLOCK		=> 'p',
 		QUOTE		=> 'blockquote',
 		LINK		=> 'a',
+		BREAK		=> 'br',
 	};
 	if (exists $map->{$type}) { return $map->{$type}}
 	die "No mapping for type '$type'";
@@ -94,12 +95,13 @@ sub markdown {
 		else {			
 
 			my ($start_end, $item) = $type =~ /^(S|E)_(.+)$/;
+			$start_end ||= '';
 
 			if ($start_end eq 'S') {
 				$html .= _start_type($item);
 				unshift @stack, $item
 			}
-			else {				
+			elsif ($start_end eq 'E') {				
 				if ($stack[0] ne $item) {
 					die "Unbalanced tags!"
 				}
@@ -107,6 +109,10 @@ sub markdown {
 					$html .= _end_type($item);
 					shift @stack; # If ok then pull off the head
 				}
+			}
+			else {
+				# Single tag
+				$html .= '<'._type_to_tag($type).'>';
 			}
 		}
 	}

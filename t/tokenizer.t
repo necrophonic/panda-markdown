@@ -17,6 +17,7 @@ use_ok "PML::Tokenizer";
 	test__quote();
 	test__header_end_of_data();
 	test__newpara();
+	#test__break();
 
 	#test_util__is_head_block_open();
 
@@ -80,6 +81,17 @@ sub test__header_end_of_data {
 				'Die on invalid header string';
 
 	}; return
+}
+
+# ------------------------------------------------------------------------------
+
+sub test__break {
+	subtest "Test 'break'" => sub {
+				
+		my $t = PML::Tokenizer->new( pml => 'a%%b');
+		_match_tokens($t, [qw|S_BLOCK CHAR BREAK CHAR E_BLOCK|]);
+
+	}; return;
 }
 
 # ------------------------------------------------------------------------------

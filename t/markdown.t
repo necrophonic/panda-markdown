@@ -37,6 +37,20 @@ is(
 
 
 is(
+	PML::markdown(qq|Line1\nLine2|)
+	,"<p>Line1<br>Line2</p>\n"
+	,'Single newline gives break'
+);
+
+
+is(
+	PML::markdown(qq|Line1\n \nLine2|)
+	,"<p>Line1<br> <br>Line2</p>\n"
+	,'Chained newline breaks'
+);
+
+
+is(
 	PML::markdown(qq!Click [[http://google.com|here]]!)
 	,qq|<p>Click <a href="http://google.com" target="_new">here</a></p>\n|
 	,"Simple link"
@@ -66,6 +80,13 @@ is(
 	,qq|<p>See this:</p><img src="/images/abc.png"><p>Nice, wasn&#39;t it?</p>\n|
 	,"Image surrounded by blocks"
 );
+
+# is(
+# 	PML::markdown(q!One line\\Next line\\Third line!)
+# 	,qq|<p>One line<br>Next line<br><br>Third line</p>|
+# 	,'Simple line breaks'
+
+# );
 
 
 done_testing();

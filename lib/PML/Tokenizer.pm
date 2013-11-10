@@ -28,6 +28,8 @@ has 'matching_context' => ( is => 'rw' );
 use Readonly;
 Readonly my $MAX_HEAD_LEVEL => 6;
 
+Readonly my $C_EM	=> '/';
+
 # -----------------------------------------------------------------------------
 
 sub _tokenize {
@@ -58,13 +60,13 @@ sub _tokenize {
 				$self->_move_to_state('p_heading');
 				$self->head_level(0); # Reset header level counter
 			}
-			elsif ($c eq '/') { $self->_move_to_state('p_emphasis')  }
+			elsif ($c eq $C_EM) { $self->_move_to_state('p_emphasis')  }
 			elsif ($c eq '*') { $self->_move_to_state('p_strong')  	 }
 			elsif ($c eq '_') { $self->_move_to_state('p_underline') }
 			elsif ($c eq '"') { $self->_move_to_state('p_quote') 	 }
 			elsif ($c eq "\n"){ $self->_move_to_state('p_newpara')	 }
 			elsif ($c eq '[') { $self->_move_to_state('p_s_link')    }	
-			elsif ($c eq '{') { $self->_move_to_state('p_s_image')	 }
+			elsif ($c eq '{') { $self->_move_to_state('p_s_image')	 }			
 			elsif ($c eq ' ') {
 				# If we're in a block, output it, otherwise skip it
 				if ($self->_is_block_open || $self->_is_head_block_open) {
@@ -82,8 +84,8 @@ sub _tokenize {
 		}
 		elsif ($state eq 'p_strong') 	{ $self->_emit_control_token( $c, 'STRONG', 	'[[STRONG]]', '*', \@chars ) }
 		elsif ($state eq 'p_underline') { $self->_emit_control_token( $c, 'UNDERLINE',  '[[UNDER]]',  '_', \@chars ) }	
-		elsif ($state eq 'p_emphasis')  { $self->_emit_control_token( $c, 'EMPHASIS', 	'[[EMPH]]',   '/', \@chars ) }
-		elsif ($state eq 'p_quote')  	{ $self->_emit_control_token( $c, 'QUOTE', 		'[[QUOTE]]',  '"', \@chars ) }
+		elsif ($state eq 'p_emphasis')  { $self->_emit_control_token( $c, 'EMPHASIS', 	'[[EMPH]]',   $C_EM, \@chars ) }
+		elsif ($state eq 'p_quote')  	{ $self->_emit_control_token( $c, 'QUOTE', 		'[[QUOTE]]',  '"', \@chars ) }		
 		elsif ($state eq 'p_s_image')	{
 
 			if ($c eq '{') {
@@ -179,8 +181,11 @@ sub _tokenize {
 				$self->_close_block_if_open;				
 			}
 			else {
-				$self->_new_char_token( "\n" );
-				unshift @chars, $c;				
+				# If there was just a single one then output a break token
+				# and push the next char back to the queue.
+				#$self->_new_char_token( "\n" );
+				$self->_new_token( 'BREAK', '' );
+				unshift @chars, $c;
 			}
 			$self->_move_to_state('data');
 
