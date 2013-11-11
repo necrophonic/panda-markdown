@@ -29,4 +29,9 @@ Simple markdown implemented so far. Maps to standard HTML tags.
   
   - {{/assets/image.jpg}} - <img src="/assets/image.jpg">
   - {{/assets/image.jpg|<<,H50,W50}} - <img class="pulled-left" src="/assets/image.jpg" height="50px" width="50px">
+  
+  - @@ Row
+  - @@[C2] Row with two columns
+  - @@[C3] Row with three columns
+  - || (inside rows) Column
 ```
