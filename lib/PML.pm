@@ -2,7 +2,7 @@ package PML;
 
 use v5.10;
 
-our $VERSION = '0.5';
+our $VERSION = '0.6';
 
 use strict;
 use warnings;
@@ -30,6 +30,8 @@ sub _type_to_tag {
 		QUOTE		=> 'blockquote',
 		LINK		=> 'a',
 		BREAK		=> 'br',
+		ROW_BLOCK	=> 'div',
+		COLUMN		=> 'div',
 	};
 	if (exists $map->{$type}) { return $map->{$type}}
 	die "No mapping for type '$type'";
@@ -64,6 +66,22 @@ sub markdown {
 		my $type = $token->type;		
 
 		if 	  ($type eq 'CHAR') { $html .= $token->content }
+		elsif ($type eq 'S_ROW_BLOCK') {
+
+			my @classes = ('clearfix');
+			my $class 	= '';
+
+			foreach my $modifier (split /,/, $token->content) {
+				if ($modifier =~ /^C(\d)/) { push @classes, 'col-'.$1 }
+			}
+						
+			$class = ' class="'.join(' ',@classes).'"' if @classes;
+			$html .= qq|<div$class>|;
+
+		}		
+		elsif ($type eq 'E_ROW_BLOCK') { $html .= q|</div>| }
+		elsif ($type eq 'S_COLUMN')	   { $html .= q|<div>|  }
+		elsif ($type eq 'E_COLUMN')	   { $html .= q|</div>| }
 		elsif ($type eq 'LINK') {
 
 			# Parse the content data to get the text alternative (if defined)

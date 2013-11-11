@@ -13,22 +13,79 @@ my $debug = false;
 
 has 'pml'	 	 => ( is => 'rw', required => true, trigger => \&_tokenize ); # Raw PML input
 has 'tokens' 	 => ( is => 'rw' ); # Array
+has 'chars'		 => ( is => 'rw' ); # Array
 
 # Parsing
 has 'state'		 => ( is => 'rw' );
 has 'content'	 => ( is => 'rw' );
 has 'head_level' => ( is => 'rw' );
 
-has 'link_data'	 => ( is => 'rw' );
-has 'image_data' => ( is => 'rw' );
+has 'link_data'	 		  => ( is => 'rw' );
+has 'image_data' 		  => ( is => 'rw' );
+has 'row_block_modifiers' => ( is => 'rw' );
 
 # Matching contexts
 has 'matching_context' => ( is => 'rw' );
 
+has 'data_context' => ( is => 'rw' ); # "data" or "row_data"
+
+
+
 use Readonly;
 Readonly my $MAX_HEAD_LEVEL => 6;
 
-Readonly my $C_EM	=> '/';
+# Control chars
+Readonly my $C_EM			   => '/';
+Readonly my $C_STRONG		   => '*';
+Readonly my $C_ROW_BLOCK	   => '@';
+Readonly my $C_QUOTE 		   => '"';
+Readonly my $C_UNDER		   => '_';
+Readonly my $C_PARA			   => "\n";
+Readonly my $C_S_LINK 		   => '[';
+Readonly my $C_E_LINK 		   => ']';
+Readonly my $C_S_IMAGE		   => '{';
+Readonly my $C_E_IMAGE		   => '}';
+Readonly my $C_HEADER		   => '#';
+Readonly my $C_S_ROW_MODIFIERS => '[';
+Readonly my $C_E_ROW_MODIFIERS => ']';
+Readonly my $C_COLUMN		   => '|';
+
+# -----------------------------------------------------------------------------
+
+sub _data_state {
+	my ($self, $c) = @_;
+
+	if ($c eq $C_HEADER) {
+		# Possible header
+		$self->_move_to_state('p_heading');
+		$self->head_level(0); # Reset header level counter
+	}
+	elsif ($c eq $C_EM) 		{ $self->_move_to_state('p_emphasis')  	}
+	elsif ($c eq $C_STRONG) 	{ $self->_move_to_state('p_strong')  	}
+	elsif ($c eq $C_UNDER)		{ $self->_move_to_state('p_underline') 	}
+	elsif ($c eq $C_QUOTE) 		{ $self->_move_to_state('p_quote') 	 	}
+	elsif ($c eq $C_PARA)		{ $self->_move_to_state('p_newpara')	}
+	elsif ($c eq $C_S_LINK)		{ $self->_move_to_state('p_s_link')    	}	
+	elsif ($c eq $C_S_IMAGE)	{ $self->_move_to_state('p_s_image')	}			
+	elsif ($c eq $C_ROW_BLOCK)	{ $self->_move_to_state('p_row_block')	}
+	elsif ($c eq ' ') {
+		# If we're in a block, output it, otherwise skip it
+		if ($self->_is_block_open || $self->_is_head_block_open) {
+			$self->_new_char_token(' ');
+		}
+	}
+	elsif ($c eq $C_PARA) {
+		$self->_requeue_char(' ');				
+	}
+	else {								 				
+		if (!$self->_is_block_open && !$self->_is_head_block_open) {
+			$self->_new_token('S_BLOCK','[[S_BLOCK]]');
+		}
+		$self->_new_char_token( $c );
+	}
+	return;
+}
+
 
 # -----------------------------------------------------------------------------
 
@@ -39,11 +96,13 @@ sub _tokenize {
 	$self->state('data');
 
 	$self->matching_context({});
+	$self->data_context('data');
 
 	# Tokens initially empty
 	$self->tokens([]);
 
 	my @chars = split //, $self->pml;
+	$self->chars(\@chars);
 	
 	# Parse until we run out of data
 	while (@chars) {
@@ -54,26 +113,35 @@ sub _tokenize {
 		my $state = $self->state;
 
 		if ($state eq 'data') {
-
-			if ($c eq '#') {
+			$self->_data_state( $c );
+		}
+		elsif ($state eq 'row_data') {
+			if ($c eq $C_HEADER) {
 				# Possible header
 				$self->_move_to_state('p_heading');
 				$self->head_level(0); # Reset header level counter
 			}
-			elsif ($c eq $C_EM) { $self->_move_to_state('p_emphasis')  }
-			elsif ($c eq '*') { $self->_move_to_state('p_strong')  	 }
-			elsif ($c eq '_') { $self->_move_to_state('p_underline') }
-			elsif ($c eq '"') { $self->_move_to_state('p_quote') 	 }
-			elsif ($c eq "\n"){ $self->_move_to_state('p_newpara')	 }
-			elsif ($c eq '[') { $self->_move_to_state('p_s_link')    }	
-			elsif ($c eq '{') { $self->_move_to_state('p_s_image')	 }			
+			elsif ($c eq $C_EM) 		{ $self->_move_to_state('p_emphasis')  	}
+			elsif ($c eq $C_STRONG) 	{ $self->_move_to_state('p_strong')  	}
+			elsif ($c eq $C_UNDER)		{ $self->_move_to_state('p_underline') 	}
+			elsif ($c eq $C_QUOTE) 		{ $self->_move_to_state('p_quote') 	 	}
+			elsif ($c eq $C_PARA)		{ $self->_move_to_state('p_newpara')	}
+			elsif ($c eq $C_S_LINK)		{ $self->_move_to_state('p_s_link')    	}	
+			elsif ($c eq $C_S_IMAGE)	{ $self->_move_to_state('p_s_image')	}	
+			elsif ($c eq $C_ROW_BLOCK)	{ $self->_move_to_state('p_row_block')	}		
 			elsif ($c eq ' ') {
 				# If we're in a block, output it, otherwise skip it
 				if ($self->_is_block_open || $self->_is_head_block_open) {
 					$self->_new_char_token(' ');
 				}
 			}
-			elsif ($c eq "\n"){ unshift @chars, ' ' }
+			elsif ($c eq $C_PARA) {
+				$self->_requeue_char(' ');				
+			}
+			elsif ($c eq $C_COLUMN) {				
+				$self->_move_to_state('p_column');		
+				next;
+			}
 			else {								 				
 				if (!$self->_is_block_open && !$self->_is_head_block_open) {
 					$self->_new_token('S_BLOCK','[[S_BLOCK]]');
@@ -81,72 +149,133 @@ sub _tokenize {
 				$self->_new_char_token( $c );
 			}
 
+			
 		}
-		elsif ($state eq 'p_strong') 	{ $self->_emit_control_token( $c, 'STRONG', 	'[[STRONG]]', '*', \@chars ) }
-		elsif ($state eq 'p_underline') { $self->_emit_control_token( $c, 'UNDERLINE',  '[[UNDER]]',  '_', \@chars ) }	
-		elsif ($state eq 'p_emphasis')  { $self->_emit_control_token( $c, 'EMPHASIS', 	'[[EMPH]]',   $C_EM, \@chars ) }
-		elsif ($state eq 'p_quote')  	{ $self->_emit_control_token( $c, 'QUOTE', 		'[[QUOTE]]',  '"', \@chars ) }		
+		elsif ($state eq 'p_column') {
+
+			if ($c eq $C_COLUMN) {
+				if ($self->_is_open('COLUMN')) {
+					# Already open, so this is a closing tag.
+					$self->_close_block_if_open;
+					$self->_new_token('E_COLUMN');
+				}
+				else {
+					$self->_new_token('S_COLUMN');
+				}				
+			}
+			else {
+				$self->_output_char_and_requeue_next( $C_COLUMN, $c );
+			}
+			$self->_move_back_to_context_data_state;
+			next;
+			
+		}
+		elsif ($state eq 'p_strong'	  ) { $self->_emit_control_token( $c, 'STRONG',    '[[STRONG]]', $C_STRONG ) }
+		elsif ($state eq 'p_underline') { $self->_emit_control_token( $c, 'UNDERLINE', '[[UNDER]]',  $C_UNDER  ) }	
+		elsif ($state eq 'p_emphasis' ) { $self->_emit_control_token( $c, 'EMPHASIS',  '[[EMPH]]',   $C_EM    	) }
+		elsif ($state eq 'p_quote'	  ) { $self->_emit_control_token( $c, 'QUOTE', 	   '[[QUOTE]]',  $C_QUOTE 	) }		
+		elsif ($state eq 'p_row_block') {
+
+			if ($c eq $C_ROW_BLOCK) {
+				# ROW_BLOCK start/end tag
+				if ($self->_is_open('ROW_BLOCK')) {
+					# Already open, so this must be a closing tag.
+					# Finalise the row and move back to normal data state.					
+					$self->_close_block_if_open;
+					$self->_new_token('E_ROW_BLOCK');
+					$self->data_context('data');
+					$self->_move_to_state('data');
+					next;				
+				}				
+				# Looks like we have a real starting ROW_BLOCK. We need
+				# to check whether there are any modifiers.
+				$self->_move_to_state('p_row_block_modifiers');				
+			}
+			else {
+				# Not a real control, output plain char and
+				# push current back to queue.
+				$self->_output_char_and_requeue_next( $C_ROW_BLOCK, $c );				
+			}
+			next;
+
+		}
+		elsif ($state eq 'p_row_block_modifiers') {
+
+			if ($c eq $C_S_ROW_MODIFIERS) {
+				$self->row_block_modifiers('');
+				$self->_move_to_state('row_block_modifiers');
+				next;
+			}
+			# No modifiers, so output row token and move back to data state.
+			$self->_new_token( 'S_ROW_BLOCK' );
+			$self->_move_back_to_context_data_state;			
+			$self->_requeue_char( $c );
+
+		}
+		elsif ($state eq 'row_block_modifiers') {
+
+			if ($c eq $C_E_ROW_MODIFIERS) {
+				# Finish modifiers so output modifier data along with a
+				# new S_ROW_BLOCK token and move to data state.
+				$self->_new_token( 'S_ROW_BLOCK', $self->row_block_modifiers );
+				$self->data_context('row_data');
+				$self->_move_to_state('row_data');				
+			}
+			else {
+				$self->row_block_modifiers( $self->row_block_modifiers.$c );
+			}
+			next;
+
+		}
 		elsif ($state eq 'p_s_image')	{
 
-			if ($c eq '{') {
+			if ($c eq $C_S_IMAGE) {
 				$self->_move_to_state('image_data');
 				$self->image_data('');				
 			}
-			else {
-				$self->_new_char_token( '{' );
-				unshift @chars, $c;				
-			}
-			next;
+			else { $self->_output_char_and_requeue_next( $C_S_IMAGE, $c ) }			
 
 		}
 		elsif ($state eq 'image_data') {
 
-			if ($c eq '}') {
+			if ($c eq $C_E_IMAGE) {
 				# Definitely starting an image now, so if there's an open block, close it.
 				$self->_close_block_if_open;
 				$self->_move_to_state( 'p_e_image' );
-			}
-			else {
-				$self->image_data( $self->image_data.$c );
-			}
-			next;
+				next;
+			}			
+			$self->image_data( $self->image_data.$c );			
 
 		}
 		elsif ($state eq 'p_e_image') {
 
-			if ($c eq '}') {
+			if ($c eq $C_E_IMAGE) {
 				# Finish the image token
 				D(" -> Write image token [",$self->image_data,"]");
 				$self->_new_token( 'IMAGE', $self->image_data);
-				$self->_move_to_state('data');	
-				next;
+				$self->_move_back_to_context_data_state;					
 			}
 			else {
 				# Otherwise still in the image data so add
 				# the char to the current image data and move
 				# to consume the next char.
 				$self->image_data( $self->image_data.$c );
-				unshift @chars, $c;
-				next;
+				$self->_requeue_char( $c );
 			}
-
+			next;
 		}
 		elsif ($state eq 'p_s_link') {
 
-			if ($c eq '[') {
+			if ($c eq $C_S_LINK) {
 				$self->_move_to_state('link_data');
 				$self->link_data('');
 			}
-			else {
-				$self->_new_char_token( '[' );
-				unshift @chars, $c;
-			}
-			next;
-
+			else { $self->_output_char_and_requeue_next( $C_S_LINK, $c ) }
+			
 		}		
 		elsif ($state eq 'link_data') {
 
-			if ( $c eq ']' ) {
+			if ( $c eq $C_E_LINK ) {
 				$self->_move_to_state( 'p_e_link' );
 				next;
 			}
@@ -160,39 +289,38 @@ sub _tokenize {
 		}
 		elsif ($state eq 'p_e_link') {
 
-			if ($c eq ']') {
+			if ($c eq $C_E_LINK) {
 				# Finish the link token
 				D(" -> Write link token [",$self->link_data,"]");
 				$self->_new_token( 'LINK', $self->link_data);
-				$self->_move_to_state('data');	
+				$self->_move_back_to_context_data_state;				
 			}
 			else {
 				# Otherwise still in the link data so add
 				# the char to the current link data and move
 				# to consume the next char.
 				$self->link_data( $self->link_data.$c );
-				unshift @chars, $c;
+				$self->_requeue_char( $c );				
 			}
 			
 		}
 		elsif ($state eq 'p_newpara') {
 
-			if ($c eq "\n") {
+			if ($c eq $C_PARA) {
 				$self->_close_block_if_open;				
 			}
 			else {
 				# If there was just a single one then output a break token
-				# and push the next char back to the queue.
-				#$self->_new_char_token( "\n" );
+				# and push the next char back to the queue.					
 				$self->_new_token( 'BREAK', '' );
-				unshift @chars, $c;
+				$self->_requeue_char( $c );				
 			}
-			$self->_move_to_state('data');
+			$self->_move_back_to_context_data_state;			
 
 		}
 		elsif ($state eq 'p_heading') {
 
-			if ($c eq '#') {
+			if ($c eq $C_HEADER) {
 				# Started a header already, so increment the
 				# level that we've reached
 				$self->head_level($self->head_level+1);
@@ -207,8 +335,8 @@ sub _tokenize {
 				# Otherwise assume it's just a hash character so output that and what we
 				# just read as character tokens.
 				$self->_finalise_heading;				
-				unshift @chars, $c;
-				$self->_move_to_state('data');
+				$self->_requeue_char( $c );
+				$self->_move_back_to_context_data_state;
 			}
 
 		}
@@ -232,8 +360,33 @@ sub _tokenize {
 
 # -----------------------------------------------------------------------------
 
+sub _move_back_to_context_data_state {
+	my ($self) = @_;
+	$self->_move_to_state( $self->data_context );
+	return;
+}
+
+# -----------------------------------------------------------------------------
+
+sub _output_char_and_requeue_next {
+	my ($self, $char_to_output, $char_to_requeue) = @_;
+	$self->_new_char_token( $char_to_output  );
+	$self->_requeue_char  ( $char_to_requeue );
+	return;
+}
+
+# -----------------------------------------------------------------------------
+
+sub _requeue_char {
+	my ($self, $char_to_requeue) = @_;
+	unshift @{$self->chars}, $char_to_requeue;
+	return;
+}
+
+# -----------------------------------------------------------------------------
+
 sub _emit_control_token {
-	my ($self, $char, $type, $content, $plain, $chars_ar) = @_;
+	my ($self, $char, $type, $content, $plain) = @_;
 
 	if ($char eq $plain) {
 		# If there isn't a block open, then we need to open on		
@@ -251,10 +404,9 @@ sub _emit_control_token {
 	else {
 		# If not a match then output the potential
 		# that we had as a plain char token.
-		$self->_new_token( 'CHAR', $plain );
-		unshift @$chars_ar, $char;				
-	}
-	$self->_move_to_state('data');
+		$self->_output_char_and_requeue_next( $plain, $char );		
+	}	
+	$self->_move_back_to_context_data_state;
 }
 
 # -----------------------------------------------------------------------------
@@ -271,9 +423,13 @@ sub _is_open {
 	return ($_[0]->matching_context->{$type}||0)%2;
 }
 
+# -----------------------------------------------------------------------------
+
 sub _is_block_open {	
 	return ($_[0]->matching_context->{BLOCK}||0)%2		
 }
+
+# -----------------------------------------------------------------------------
 
 sub _is_head_block_open {	
 	return ($_[0]->matching_context->{HEAD1}||0)%2
@@ -321,6 +477,8 @@ sub _new_char_token {
 sub _new_token {
 	my ($self, $type, $content) = @_;
 	
+	$content ||= '';
+
 	D(" -> Emit [$type] token [$content]");
 	
 	# Need to update the matching counts so for that we need the specific

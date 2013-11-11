@@ -81,6 +81,19 @@ is(
 	,"Image surrounded by blocks"
 );
 
+
+is(
+	PML::markdown(q!@@A simple block@@!)
+	,qq|<div class="clearfix"><p>A simple block</p></div>\n|
+	,'Simple block with no modifiers'
+);
+
+is(
+	PML::markdown(q!@@[C2]||Left col||||Right col||@@!)
+	,qq|<div class="clearfix col-2"><div><p>Left col</p></div><div><p>Right col</p></div></div>\n|
+	,'Simple with modifiers'
+);
+
 # is(
 # 	PML::markdown(q!One line\\Next line\\Third line!)
 # 	,qq|<p>One line<br>Next line<br><br>Third line</p>|
