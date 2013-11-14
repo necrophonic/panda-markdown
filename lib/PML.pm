@@ -84,28 +84,23 @@ sub markdown {
 		elsif ($type eq 'E_COLUMN')	   { $html .= q|</div>| }
 		elsif ($type eq 'LINK') {
 
-			# Parse the content data to get the text alternative (if defined)
-			my ($href,$text) = split /\|/, $token->content;
-			$text ||= $href;
-			$html .= qq|<a href="$href" target="_new">$text</a>|;
+			my $href   = $token->url;
+			my $text   = $token->text;
+			my $target = $href=~/^http/?' target="_new"':'';			
+
+			$html .= qq|<a href="$href"$target>$text</a>|;
 
 		}
 		elsif ($type eq 'IMAGE') {
 			
-			my ($src,$options) = split /\|/, $token->content;		
+			my $src = $token->src;
+			
+			my $width  = $token->width  ? ' width="' .$token->width .'px"' : '';
+			my $height = $token->height ? ' height="'.$token->height.'px"' : '';
 
-			my $class  = '';
-			my $width  = '';
-			my $height = '';
-
-			if ($options) {				
-				foreach my $opt (split /,/,$options) {
-					if 	  ($opt eq '&lt;&lt;') { $class  = q| class="pulled-left"| } # NB. the chevrons are encoded before we get them
-					elsif ($opt eq '&gt;&gt;') { $class  = q| class="pulled-right"|}
-					elsif ($opt =~ /^H(\d+)/ ) { $height = qq| height="$1px"| }
-					elsif ($opt =~ /^W(\d+)/ ) { $width  = qq| width="$1px"| }
-				}
-			}
+			my $class = '';
+			if 	  ($token->align eq '<<') { $class  = q| class="pulled-left"|  }
+			elsif ($token->align eq '>>') { $class  = q| class="pulled-right"| }
 
 			$html .= qq|<img$class src="$src"$height$width>|;
 

@@ -9,6 +9,9 @@ use boolean;
 use Moo;
 use PML::Tokenizer::Token;
 
+use PML::LinkToken;
+use PML::ImageToken;
+
 my $debug = false;
 
 has 'pml'	 	 => ( is => 'rw', required => true, trigger => \&_tokenize ); # Raw PML input
@@ -252,7 +255,24 @@ sub _tokenize {
 			if ($c eq $C_E_IMAGE) {
 				# Finish the image token
 				D(" -> Write image token [",$self->image_data,"]");
-				$self->_new_token( 'IMAGE', $self->image_data);
+				#$self->_new_token( 'IMAGE', $self->image_data);
+
+				my ($src,$options) = split /\|/, $self->image_data;
+
+				my $image_token = PML::ImageToken->new( src => $src );
+
+				if ($options) {
+					my @options = split /,/, $options;
+					foreach my $option (@options) {
+
+						if 	  ($option eq '&gt;&gt;') { $image_token->align('>>'); }
+						elsif ($option eq '&lt;&lt;') { $image_token->align('<<'); }
+						elsif ($option =~ /H(\d+)/)	  { $image_token->height($1);  }
+						elsif ($option =~ /W(\d+)/)	  { $image_token->width($1);   }
+					}
+				}
+				
+				push @{$self->tokens}, $image_token;
 				$self->_move_back_to_context_data_state;					
 			}
 			else {
@@ -292,8 +312,15 @@ sub _tokenize {
 			if ($c eq $C_E_LINK) {
 				# Finish the link token
 				D(" -> Write link token [",$self->link_data,"]");
-				$self->_new_token( 'LINK', $self->link_data);
-				$self->_move_back_to_context_data_state;				
+
+				my ($href,$text) = split /\|/, $self->link_data;				
+
+				D(" -> Write link token");
+				my $link_token = PML::LinkToken->new( url => $href );
+				$link_token->text( $text );
+
+				push @{$self->tokens}, $link_token;				
+				$self->_move_back_to_context_data_state;
 			}
 			else {
 				# Otherwise still in the link data so add

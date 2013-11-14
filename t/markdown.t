@@ -56,6 +56,12 @@ is(
 	,"Simple link"
 );
 
+is(
+	PML::markdown(qq!Click [[/assets/img.png|here]]!)
+	,qq|<p>Click <a href="/assets/img.png">here</a></p>\n|
+	,"Internal link"
+);
+
 
 is(
 	PML::markdown(qq!{{http://test.com/images/abc.png}}!)
