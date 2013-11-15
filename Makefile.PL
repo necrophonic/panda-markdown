@@ -16,7 +16,8 @@ WriteMakefile(
 		'Moo'	   	   => '1.003001',
 		'boolean'  	   => '0.30',
 		'Readonly' 	   => '1.03',
-		'HTML::Escape' => '1.08'
+		'HTML::Escape' 	   => '1.08',
+		'Log::Log4Perl'	   => '1.42',
 	},
 	TEST_REQUIRES => {
 		"Test::More" 	  => '0.99',
