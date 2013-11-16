@@ -6,8 +6,8 @@ use strict;
 use warnings;
 use boolean;
 
-use Log::Log4perl qw(:easy);
-#Log::Log4perl->easy_init($ERROR);
+#use Log::Log4perl qw(:easy);
+#Log::Log4perl->easy_init($DEBUG);
 
 use Moo;
 
@@ -22,13 +22,14 @@ has 'tmp_style_context' => ( is => 'rw' );
 has 'tmp_link_context'  => ( is => 'rw' );
 has 'tmp_image_context' => ( is => 'rw' );
 
+has 'pointer'	=> ( is => 'rw' );
 
 my $SYM_STRONG		= '*';
 my $SYM_UNDERLINE	= '_';
 my $SYM_EMPHASIS	= '/';
 my $SYM_QUOTE		= '"';
 
-my $SYM_GROUP_STYLE_RE = qr/(\*|_|\/|")/o;
+my $SYM_GROUP_STYLE_RE = qr/^(\*|_|\/|")$/o;
 
 my $SYM_LINK_START  = '[';
 my $SYM_LINK_END    = ']';
@@ -38,10 +39,12 @@ my $SYM_IMAGE_END	= '}';
 
 my $SYM_HEADER 		= '#';
 
+my $RE_DIGIT	= qr/^\d$/;
+
 sub tokenize {
 	my ($self, $pml) = @_;
-	INFO '-------------------------------------------';
-	INFO "Start new tokenize";
+	#INFO '-------------------------------------------';
+	##INFO "Start new tokenize";
 	$self->pml($pml || $self->fatal("Must supply 'pml' to tokenize"));
 	$self->chars([split//,$pml]);
 	$self->state('data');
@@ -73,15 +76,22 @@ sub get_next_token {
 sub _tokenize {
 	my ($self) = @_;
 
-	while(@{$self->chars}) {
-		my $char = shift @{$self->chars};
+	$self->pointer(-1);
+	my $total_chars = $#{$self->chars};
+
+	while($self->pointer < $total_chars) {
+	#while(@{$self->chars}) {
+		#my $char = shift @{$self->chars};
+		my $char = $self->chars->[$self->pointer($self->pointer+1)];
 
 		my $state = $self->state;
 
-		DEBUG "[[State:$state]]";
-		DEBUG "  > Read char '$char'";
+		#DEBUG "[[State:$state]]";
+		#DEBUG "  > Read char '$char'";
 
-		if ($state eq 'data') {
+		# --------------
+
+		if ($state eq 'string') {
 			
 			if ($char eq $SYM_HEADER) {
 				# Hit a potential header. Move to p_header and read next char.
@@ -96,22 +106,25 @@ sub _tokenize {
 			}
 
 			if ($char =~ $SYM_GROUP_STYLE_RE) {
-				# Hit a potential style token. Move to p_style and read the next char.
+				# Hit a potential starting style token. Move
+				# to p_style state and read the next char.
 				$self->tmp_style_context($1);
-				TRACE "  > Store tmp style context [$1]";
-				$self->_move_to('p_style');	
-				$self->_create_token({type=>'PARA'});
-				next;		
+				#TRACE "  > Store tmp style context [$1]";
+				$self->_move_to('p_style');
+				next;
 			}
 
-			# Read a plain char and in open data mode.
-			# If not a space move to string state push the char back to the
-			# queue and output a paragraph start token.
-			if ($char =~ /\S/) {
-				$self->_move_to('start_string');
-				$self->_requeue( $char );
-				$self->_create_token({type=>'PARA'});
+			if ($char eq $SYM_LINK_START) {
+				# Potential href link. Move to p_link state
+				# and read the next char.
+				$self->_move_to('p_link');
+				next;
 			}
+
+			# Plain char, append to current string
+			# token and stay in string state.
+			#TRACE '  > Append to open token';
+			$self->_append_char_to_tmp_string_token( $char );
 			next;
 		}
 
@@ -130,7 +143,7 @@ sub _tokenize {
 			# Didn't complete header sequence.
 			# Requeue the header char and the char we just read.			
 			if ($self->_is_tmp_string_token_open) {
-				TRACE "  > Plain header char (uncompleted sequence)";
+				#TRACE "  > Plain header char (uncompleted sequence)";
 				$self->_requeue( $SYM_HEADER );				
 				$self->_requeue( $char );
 				$self->_move_to('data');
@@ -145,17 +158,17 @@ sub _tokenize {
 			if ($char eq '|') {
 				# Finished header level so output level and switch to
 				# header text and read next char.				
-				TRACE "  --> Read header switch";
+				#TRACE "  --> Read header switch";
 				$self->_move_to('header_text');
 				next;
 			}
 
-			if ($char !~ /\d/) {
-				$self->fatal("unexpected char ($char) in header level");;
+			if ($char !~ $RE_DIGIT) {
+				$self->fatal("unexpected char ($char) in header level");
 			}
 
 			# Otherwise append to header level
-			TRACE "  --> Add '$char' to current header level";
+			#TRACE "  --> Add '$char' to current header level";
 			$self->tmp_token->{level} .= $char;
 			next;
 		}
@@ -172,7 +185,6 @@ sub _tokenize {
 
  			# Otherwise append to header text
  			$self->tmp_token->{text} .= $char;
-
  			next;
  		}
 
@@ -219,45 +231,6 @@ sub _tokenize {
 
 		# --------------
 
-		if ($state eq 'string') {
-			
-			if ($char eq $SYM_HEADER) {
-				# Hit a potential header. Move to p_header and read next char.
-				$self->_move_to('p_header');
-				next;
-			}
-
-			if ($char eq $SYM_IMAGE_START) {
-				# Hit potential image. Move to p_image and read next char.
-				$self->_move_to('p_image');
-				next;
-			}
-
-			if ($char =~ $SYM_GROUP_STYLE_RE) {
-				# Hit a potential starting style token. Move
-				# to p_style state and read the next char.
-				$self->tmp_style_context($1);
-				TRACE "  > Store tmp style context [$1]";
-				$self->_move_to('p_style');
-				next;
-			}
-
-			if ($char eq $SYM_LINK_START) {
-				# Potential href link. Move to p_link state
-				# and read the next char.
-				$self->_move_to('p_link');
-				next;
-			}
-
-			# Plain char, append to current string
-			# token and stay in string state.
-			TRACE '  > Append to open token';
-			$self->_append_char_to_tmp_string_token( $char );
-			next;
-		}
-
-		# --------------
-
 		if ($state eq 'p_style') {
 
 			if ($char =~ $SYM_GROUP_STYLE_RE) {
@@ -271,7 +244,7 @@ sub _tokenize {
 
 
 					if ($self->_is_tmp_string_token_open) {
-						TRACE "  > Matched style context (".$self->tmp_style_context.')';
+						#TRACE "  > Matched style context (".$self->tmp_style_context.')';
 						$self->_emit_token;
 					}
 
@@ -289,7 +262,7 @@ sub _tokenize {
 			# If there's an open string token then append the style char to it,
 			# requeue the next char, and move back to string state.
 			if ($self->_is_tmp_string_token_open) {
-				TRACE "  > Plain style char (uncompleted sequence)";
+				#TRACE "  > Plain style char (uncompleted sequence)";
 				$self->_append_char_to_tmp_string_token( $self->tmp_style_context );
 				$self->_requeue( $char );
 				$self->_move_to('string');
@@ -320,15 +293,15 @@ sub _tokenize {
 			# If there's an open string token then append the link char to it,
 			# requeue the next char, and move back to string state.
 			if ($self->_is_tmp_string_token_open) {
-				TRACE "  > Plain link char (uncompleted sequence)";
-				$self->_append_char_to_tmp_string_token( $self->tmp_style_context );
+				#TRACE "  > Plain link char (uncompleted sequence)";
+				$self->_append_char_to_tmp_string_token( $char );
 				
 			}
 			# Didn't complete sequence.
 			# No open string so start a new string and append style char to it.
 			# Requeue next char.
 			else  {
-				TRACE "  > Plain style char (uncompleted sequence)";
+				#TRACE "  > Plain style char (uncompleted sequence)";
 				$self->_create_token({type=>'STRING',content=>$self->tmp_style_context});				
 			}
 			$self->_requeue( $char );
@@ -353,14 +326,14 @@ sub _tokenize {
 			# If there's an open string token then appen the image char to it,
 			# requeue the next char, and move to data state.
 			if ($self->_is_tmp_string_token_open) {
-				TRACE "  > Plain image char (uncompleted sequence)";
+				#TRACE "  > Plain image char (uncompleted sequence)";
 				$self->_append_char_to_tmp_string_token( $SYM_IMAGE_START );
 			}
 			# Didn't complete sequence.
 			# No open string so start a new string and append char to it.
 			# Requeue next char.
 			else {
-				TRACE "  > Plain image char (uncompleted sequence)";
+				#TRACE "  > Plain image char (uncompleted sequence)";
 				$self->_create_token({type=>'STRING',content=>$SYM_IMAGE_START});	
 			}
 			$self->_requeue( $char );
@@ -443,16 +416,26 @@ sub _tokenize {
 		# --------------
 
 		if ($state eq 'image_options_height') {
-			if ($char =~ /\d/) { $self->tmp_token->{height} .= $char; next }
+			if ($char =~ $RE_DIGIT) { $self->tmp_token->{height} .= $char; next }
 			if ($char eq ',')  { $self->_move_to('image_options'); 	  next }
+			if ($char eq '}')  {
+				$self->_move_to('image_options');
+				$self->_requeue( $char );
+				next;
+			}
 			$self->fatal("image height option expecting digit");
 		}
 
 		# --------------
 
 		if ($state eq 'image_options_width') {
-			if ($char =~ /\d/) { $self->tmp_token->{width} .= $char; next }
+			if ($char =~ $RE_DIGIT) { $self->tmp_token->{width} .= $char; next }
 			if ($char eq ',')  { $self->_move_to('image_options');   next }
+			if ($char eq '}')  {
+				$self->_move_to('image_options');
+				$self->_requeue( $char );
+				next;
+			}
 			$self->fatal("image width option expecting digit");
 		}
 
@@ -463,6 +446,7 @@ sub _tokenize {
 			# Complete sequence so emit IMAGE token and move to data state
 			if ($char eq $SYM_IMAGE_END) {
 				$self->_emit_token;
+				$self->tmp_image_context(undef);
 				$self->_move_to('data');
 				next;
 			}
@@ -499,7 +483,7 @@ sub _tokenize {
 			# If complete end sequence then emit the link token
 			# and move back to string state.
 			if ($char eq $SYM_LINK_END) {
-				TRACE "  > Complete link end sequence";
+				#TRACE "  > Complete link end sequence";
 				$self->_move_to('start_string');
 				$self->_emit_token;		
 				next;		
@@ -518,13 +502,49 @@ sub _tokenize {
 			next;
 
 		}
+
+		# --------------
+
+		if ($state eq 'data') {
+			
+			if ($char eq $SYM_HEADER) {
+				# Hit a potential header. Move to p_header and read next char.
+				$self->_move_to('p_header');
+				next;
+			}
+
+			if ($char eq $SYM_IMAGE_START) {
+				# Hit potential image. Move to p_image and read next char.
+				$self->_move_to('p_image');
+				next;
+			}
+
+			if ($char =~ $SYM_GROUP_STYLE_RE) {
+				# Hit a potential style token. Move to p_style and read the next char.
+				$self->tmp_style_context($1);
+				#TRACE "  > Store tmp style context [$1]";
+				$self->_move_to('p_style');	
+				$self->_create_token({type=>'PARA'});
+				next;		
+			}
+
+			# Read a plain char and in open data mode.
+			# If not a space move to string state push the char back to the
+			# queue and output a paragraph start token.
+			if ($char ne ' ') {
+				$self->_move_to('start_string');
+				$self->_requeue( $char );
+				$self->_create_token({type=>'PARA'});
+			}
+			next;
+		}
 	}
 
 	# If there are any tokens currently pending, then emit them now.
 	if ($self->tmp_token) {
-		TRACE "[[Output tailing token]]";
+		#TRACE "[[Output tailing token]]";
 		if ($self->tmp_token->{type} eq 'STRING') {
-			INFO "CONTENT IS ".$self->tmp_token->{content};
+			#INFO "CONTENT IS ".$self->tmp_token->{content};
 			$self->_emit_token if $self->tmp_token->{content} ne '';
 		}
 		else {
@@ -532,7 +552,7 @@ sub _tokenize {
 		}
 	}
 	
-	DEBUG "[[Tokenization complete]]";
+	#DEBUG "[[Tokenization complete]]";
 	return;
 }
 
@@ -541,7 +561,7 @@ sub _tokenize {
 sub fatal {
 	my ($self, @msg) = @_;
 	my $msg = join '',@msg;
-	ERROR "!!Tokenizer Error: $msg!!";
+	#ERROR "!!Tokenizer Error: $msg!!";
 	die "$msg\n\n";
 }
 
@@ -550,7 +570,7 @@ sub fatal {
 sub _create_token {
 	my ($self, $hash) = @_;
 
-	DEBUG "  > Create token";
+	#DEBUG "  > Create token";
 
 	# If there's a current "pending" token then emit it before creating
 	# the new token in tmp space.
@@ -558,7 +578,7 @@ sub _create_token {
 		$self->_emit_token($self->tmp_token);
 	}
 
-	TRACE "  > Creating new token '$$hash{type}'";
+	#TRACE "  > Creating new token '$$hash{type}'";
 	
 	$self->tmp_token( $hash );
 	return;
@@ -586,7 +606,7 @@ sub _emit_token {
 		}
 	}
 
-	TRACE "  > Emit token '$token->{type}' [$content]";
+	#TRACE "  > Emit token '$token->{type}' [$content]";
 	$self->tmp_token(undef);
 	push @{$self->tokens}, $token;
 	return;
@@ -606,8 +626,9 @@ sub _read_and_clear_tmp_token {
 
 sub _requeue {
 	my ($self,$char_to_requeue) = @_;
-	unshift @{$self->chars}, $char_to_requeue;
-	TRACE "  > Requeue [$char_to_requeue]";
+	$self->pointer( $self->pointer - 1 );
+	#unshift @{$self->chars}, $char_to_requeue;
+	#TRACE "  > Requeue [$char_to_requeue]";
 }
 
 # ------------------------------------------------------------------------------
@@ -615,14 +636,17 @@ sub _requeue {
 sub _move_to {
 	my ($self,$state_to_move_to) = @_;
 	$self->state($state_to_move_to);
-	TRACE "  > Move to state [$state_to_move_to]";
+	#TRACE "  > Move to state [$state_to_move_to]";
 }
 
 # ------------------------------------------------------------------------------
 
 sub _append_char_to_tmp_string_token {
 	my ($self, $char_to_append) = @_;
-	TRACE "  > Appending char [$char_to_append] to tmp string token";
+
+	$self->fatal("unable to append null char to tmp string token") unless $char_to_append;
+
+	#TRACE "  > Appending char [$char_to_append] to tmp string token";
 	if (!$self->tmp_token) {
 		$self->fatal("Can't append to uninitialised string token!");
 	}

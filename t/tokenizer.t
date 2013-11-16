@@ -185,6 +185,9 @@ subtest "Image markup" => sub {
 		dies_ok {$tokenizer->tokenize('{{img.png|}a}}')} "Dies when } in options";
 		dies_ok {$tokenizer->tokenize('{{img.png|Ha}}')} "Dies when bad height digit";
 		dies_ok {$tokenizer->tokenize('{{img.png|Wa}}')} "Dies when bad width digit";
+
+		lives_ok {$tokenizer->tokenize('{{a|H1}}')} "Height option end of tag ok";
+		lives_ok {$tokenizer->tokenize('{{a|W1}}')} "Width option end of tag ok";
 	};
 
 	subtest "Image token content" => sub {
