@@ -1,11 +1,21 @@
+0.7
+	- NOT COMPATIBLE WITH PREVIOUS VERSIONS
+		- Syntax changes for:
+			- header layouts
+	- Performance optimisations (3x faster than previous version)
+
+
 0.6 2013-11-11
 	- Adds support for basic rows and 2/3 column layouts
+
 
 0.5 2013-11-10
 	- Adds single newline break support
 
+
 0.4 2013-11-07
 	- Add float and size options to images
+
 	
 0.3	2013-11-06
 	- Adds simple url support
