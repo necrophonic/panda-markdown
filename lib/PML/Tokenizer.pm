@@ -7,7 +7,7 @@ use warnings;
 use boolean;
 
 #use Log::Log4perl qw(:easy);
-#Log::Log4perl->easy_init($DEBUG);
+#Log::Log4perl->easy_init($TRACE);
 
 use Moo;
 
@@ -21,15 +21,21 @@ has 'tmp_token' => ( is => 'rw' );
 has 'tmp_style_context' => ( is => 'rw' );
 has 'tmp_link_context'  => ( is => 'rw' );
 has 'tmp_image_context' => ( is => 'rw' );
+has 'tmp_row_context'   => ( is => 'rw' ); #1=in row, 0=not in row
 
 has 'pointer'	=> ( is => 'rw' );
 
+# Style markers
 my $SYM_STRONG		= '*';
 my $SYM_UNDERLINE	= '_';
 my $SYM_EMPHASIS	= '/';
 my $SYM_QUOTE		= '"';
-
 my $SYM_GROUP_STYLE_RE = qr/^(\*|_|\/|")$/o;
+
+# Block markers
+my $SYM_PARAGRAPH	= "\n";
+my $SYM_ROW			= '@';
+my $SYM_COLUMN		= '|';
 
 my $SYM_LINK_START  = '[';
 my $SYM_LINK_END    = ']';
@@ -41,15 +47,18 @@ my $SYM_HEADER 		= '#';
 
 my $RE_DIGIT	= qr/^\d$/;
 
+# ------------------------------------------------------------------------------
+
 sub tokenize {
 	my ($self, $pml) = @_;
-	#INFO '-------------------------------------------';
-	##INFO "Start new tokenize";
+	#TRACE '-------------------------------------------';
+	#TRACE "Start new tokenize";
 	$self->pml($pml || $self->fatal("Must supply 'pml' to tokenize"));
 	$self->chars([split//,$pml]);
 	$self->state('data');
 	$self->tokens([]);
 	$self->tmp_token(undef);
+	$self->tmp_row_context(0);
 
 	$self->_tokenize;
 	return $self;
@@ -79,15 +88,13 @@ sub _tokenize {
 	$self->pointer(-1);
 	my $total_chars = $#{$self->chars};
 
-	while($self->pointer < $total_chars) {
-	#while(@{$self->chars}) {
-		#my $char = shift @{$self->chars};
+	while($self->pointer < $total_chars) {	
 		my $char = $self->chars->[$self->pointer($self->pointer+1)];
 
 		my $state = $self->state;
 
-		#DEBUG "[[State:$state]]";
-		#DEBUG "  > Read char '$char'";
+		#TRACE "[[State:$state]]";
+		#TRACE "  > Read char '$char'";
 
 		# --------------
 
@@ -106,25 +113,92 @@ sub _tokenize {
 			}
 
 			if ($char =~ $SYM_GROUP_STYLE_RE) {
-				# Hit a potential starting style token. Move
-				# to p_style state and read the next char.
-				$self->tmp_style_context($1);
-				#TRACE "  > Store tmp style context [$1]";
+				# Hit a potential starting style token. Move to p_style
+				# state and read the next char.
+				$self->tmp_style_context($1);				
 				$self->_move_to('p_style');
 				next;
 			}
 
 			if ($char eq $SYM_LINK_START) {
-				# Potential href link. Move to p_link state
-				# and read the next char.
+				# Potential href link. Move to p_link state and read the next char.
 				$self->_move_to('p_link');
+				next;
+			}
+			
+			if ($char eq $SYM_PARAGRAPH) {
+				# Potential new paragraph. Move to p_paragraph state and read next char.
+				$self->_move_to('p_paragraph');
+				next;
+			}
+
+			if ($char eq $SYM_ROW) {
+				# Potential row start/end. Move to p_row state and read next char.
+				$self->_move_to('p_row');
+				next;
+			}
+
+			if ($char eq $SYM_COLUMN && $self->tmp_row_context) {
+				# Potential start new column. Move to p_column state and read next char.
+				$self->_move_to('p_column');
 				next;
 			}
 
 			# Plain char, append to current string
-			# token and stay in string state.
-			#TRACE '  > Append to open token';
+			# token and stay in string state.			
 			$self->_append_char_to_tmp_string_token( $char );
+			next;
+		}
+
+		# --------------
+
+		if ($state eq 'data') {
+			
+			if ($char eq $SYM_HEADER) {
+				# Hit a potential header. Move to p_header and read next char.
+				$self->_move_to('p_header');
+				next;
+			}
+
+			if ($char eq $SYM_IMAGE_START) {
+				# Hit potential image. Move to p_image and read next char.
+				$self->_move_to('p_image');
+				next;
+			}
+
+			if ($char =~ $SYM_GROUP_STYLE_RE) {
+				# Hit a potential style token. Move to p_style and read the next char.
+				$self->tmp_style_context($1);
+				#TRACE "  > Store tmp style context [$1]";
+				$self->_move_to('p_style');					
+				next;		
+			}
+
+			if ($char eq $SYM_PARAGRAPH) {
+				# Potential new paragraph. Move to p_paragraph state and read next chars
+				$self->_move_to('p_paragraph');
+				next;
+			}
+
+			if ($char eq $SYM_ROW) {
+				# Potential row start/end. Move to p_row state and read next char.
+				$self->_move_to('p_row');
+				next;
+			}
+
+			if ($char eq $SYM_COLUMN && $self->tmp_row_context) {
+				# Potential start new column. Move to p_column state and read next char.
+				$self->_move_to('p_column');
+				next;
+			}
+
+			# Read a plain char and in open data mode.
+			# If not a space move to string state push the char back to the
+			# queue and output a paragraph start token.
+			if ($char ne ' ') {
+				$self->_move_to('start_string');
+				$self->_requeue( $char );				
+			}
 			next;
 		}
 
@@ -264,12 +338,38 @@ sub _tokenize {
 			if ($self->_is_tmp_string_token_open) {
 				#TRACE "  > Plain style char (uncompleted sequence)";
 				$self->_append_char_to_tmp_string_token( $self->tmp_style_context );
-				$self->_requeue( $char );
+				$self->_requeue;
 				$self->_move_to('string');
 				next;
 			}
 
 			$self->tmp_style_context(undef);
+			next;
+		}
+
+		# --------------
+
+		if ($state eq 'p_paragraph') {
+
+			# Emit any existing token.
+			# Always do this here as complete or incomplete sequences will both
+			# lead to a new token needing to be emitted.
+			$self->_emit_token; 
+
+			if ($char eq $SYM_PARAGRAPH) {
+				# Complete paragraph sequence. Output paragraph,
+				# move to data and read next char. 
+				$self->_emit_token({type=>'PARA'});
+				$self->_move_to('data');
+				next;
+			}
+
+			# Incomplete "new para" sequence. In this case a newline is treated
+			# as a line break, so output a line break token, requeue char and move
+			# to data state.
+			$self->_emit_token({type=>'LINE_BREAK'});
+			$self->_requeue;
+			$self->_move_to('data');
 			next;
 		}
 
@@ -468,7 +568,11 @@ sub _tokenize {
 			if ($char eq $SYM_LINK_END) { $self->_move_to('p_e_link'); next }
 
 			# Switch context from href to text and get next char
-			if ($char eq '|') { $self->tmp_link_context('text'); next }
+			if ($char eq '|') {
+				$self->tmp_link_context('text');
+				$self->_move_to('link_text');
+				next;
+			}
 
 			if ($state eq 'link_href') { $self->tmp_token->{href} .= $char; next }
 			if ($state eq 'link_text') { $self->tmp_token->{text} .= $char; next }			
@@ -505,39 +609,55 @@ sub _tokenize {
 
 		# --------------
 
-		if ($state eq 'data') {
-			
-			if ($char eq $SYM_HEADER) {
-				# Hit a potential header. Move to p_header and read next char.
-				$self->_move_to('p_header');
+		if ($state eq 'p_row') {
+
+			if ($char eq $SYM_ROW) {
+				# Complete row sequence. Output row token, flip row
+				# context, move to data state and read next char.
+				$self->_emit_token; # Clear any existing
+				$self->_emit_token({type=>'ROW'});
+				$self->tmp_row_context( $self->tmp_row_context?0:1 );
+				$self->_move_to('data');
 				next;
 			}
 
-			if ($char eq $SYM_IMAGE_START) {
-				# Hit potential image. Move to p_image and read next char.
-				$self->_move_to('p_image');
-				next;
+			# Otherwise incomplete sequence so treat as string. Output
+			# symbol to string (existing or create new) and move to string state.
+			if ($self->_is_tmp_string_token_open) {
+				$self->_append_char_to_tmp_string_token($SYM_ROW);
 			}
-
-			if ($char =~ $SYM_GROUP_STYLE_RE) {
-				# Hit a potential style token. Move to p_style and read the next char.
-				$self->tmp_style_context($1);
-				#TRACE "  > Store tmp style context [$1]";
-				$self->_move_to('p_style');	
-				$self->_create_token({type=>'PARA'});
-				next;		
+			else {
+				$self->_emit_token({type=>'STRING',content=>$SYM_ROW});
 			}
-
-			# Read a plain char and in open data mode.
-			# If not a space move to string state push the char back to the
-			# queue and output a paragraph start token.
-			if ($char ne ' ') {
-				$self->_move_to('start_string');
-				$self->_requeue( $char );
-				$self->_create_token({type=>'PARA'});
-			}
+			$self->_move_to('string');
 			next;
 		}
+
+		# --------------
+
+		if ($state eq 'p_column') {
+
+			if ($char eq $SYM_COLUMN) {
+				# Completed column sequence, Output column token, move to data
+				# state and read next char.
+				$self->_emit_token;
+				$self->_emit_token({type=>'COLUMN'});
+				$self->_move_to('data');
+				next;
+			}
+
+			# Otherwise incomplete sequence so treat as string. Output
+			# symbol to string (existing or new) and move to string state.
+			if ($self->_is_tmp_string_token_open) {
+				$self->_append_char_to_tmp_string_token($SYM_COLUMN);
+			}
+			else {
+				$self->_emit_token({type=>'STRING',content=>$SYM_COLUMN});
+			}
+			$self->_move_to('string');
+			next;
+		}
+		
 	}
 
 	# If there are any tokens currently pending, then emit them now.
@@ -627,8 +747,6 @@ sub _read_and_clear_tmp_token {
 sub _requeue {
 	my ($self,$char_to_requeue) = @_;
 	$self->pointer( $self->pointer - 1 );
-	#unshift @{$self->chars}, $char_to_requeue;
-	#TRACE "  > Requeue [$char_to_requeue]";
 }
 
 # ------------------------------------------------------------------------------
