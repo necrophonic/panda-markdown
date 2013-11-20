@@ -45,14 +45,17 @@ sub markdown {
 
 	# Clean the PML before we start as we don't allow 
 	# interpretable HTML.
-	$pml = HTML::Escape::escape_html($pml);	
+	# $pml = HTML::Escape::escape_html($pml);	
 
-	# Fix "quot"s
-	$pml =~ s/\&quot;/\"/g;
+	# # Fix "quot"s
+	# $pml =~ s/\&quot;/\"/g;
 
 	
-	$pml =~ s/^ *//g; # Leading spaces
-	$pml =~ s/ *$//g; # Trailing spaces
+	# $pml =~ s/^ *//g; # Leading spaces
+	# $pml =~ s/ *$//g; # Trailing spaces
+
+	# $pml =~ s/\&gt;\&gt;/>>/g;
+	# $pml =~ s/\&lt;\&lt;/<</g;
 
 	my $tokenizer = PML::Tokenizer->new( pml => $pml );
 

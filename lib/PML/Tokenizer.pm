@@ -10,6 +10,7 @@ use boolean;
 #Log::Log4perl->easy_init($TRACE);
 
 use Moo;
+use HTML::Escape;
 
 has 'pml'	=> ( is => 'rw' );
 has 'chars'	=> ( is => 'rw' );
@@ -53,12 +54,31 @@ sub tokenize {
 	my ($self, $pml) = @_;
 	#TRACE '-------------------------------------------';
 	#TRACE "Start new tokenize";
-	$self->pml($pml || $self->fatal("Must supply 'pml' to tokenize"));
+
+	$pml || $self->fatal("Must supply 'pml' to tokenize");
+
+	$pml = HTML::Escape::escape_html($pml);	
+
+	# Fix "quot"s
+	$pml =~ s/\&quot;/\"/g;
+	$pml =~ s/^ *//g; # Leading spaces	
+	$pml =~ s/ *$//g; # Trailing spaces	
+	$pml =~ s/&gt;&gt;/>>/g;
+	$pml =~ s/&lt;&lt;/<</g;
+	$pml =~ s/&lt;&gt;/<>/g;
+	$pml =~ s/&gt;&lt;/></g;
+
+	$self->pml($pml);
 	$self->chars([split//,$pml]);
 	$self->state('data');
 	$self->tokens([]);
 	$self->tmp_token(undef);
 	$self->tmp_row_context(0);
+
+
+	
+
+
 
 	$self->_tokenize;
 	return $self;

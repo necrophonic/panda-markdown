@@ -9,6 +9,8 @@ use boolean;
 #use Log::Log4perl qw(:easy);
 #Log::Log4perl->easy_init($#TRACE);
 
+
+
 use Moo;
 use PML::Tokenizer;
 
@@ -29,7 +31,6 @@ sub format {
 	my ($self, $pml) = @_;
 	
 	$pml || $self->fatal("Must supply 'pml' to HTMLFormatter");
-
 	
 	my @tokens 	  = @{$self->tokenizer->tokenize( $pml )->tokens};	
 
@@ -198,9 +199,6 @@ sub format {
 		if ($tag eq 'PARA') { $self->_append_to_html('</p>') }
 	}
 
-	use Data::Dumper;
-	print Dumper $self->html_chunks;
-
 	return join '', @{$self->html_chunks};
 }
 
@@ -302,7 +300,7 @@ sub _is_tag_matched {
 sub fatal {
 	my ($self, @msg) = @_;
 	my $msg = join '',@msg;
-	ERROR "!!HTMLFormatter Error: $msg!!";
+	#ERROR "!!HTMLFormatter Error: $msg!!";
 	die "$msg\n\n";
 }
 
