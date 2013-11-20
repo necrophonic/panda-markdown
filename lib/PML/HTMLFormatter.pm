@@ -6,8 +6,8 @@ use strict;
 use warnings;
 use boolean;
 
-use Log::Log4perl qw(:easy);
-#Log::Log4perl->easy_init($TRACE);
+#use Log::Log4perl qw(:easy);
+#Log::Log4perl->easy_init($#TRACE);
 
 use Moo;
 use PML::Tokenizer;
@@ -15,8 +15,13 @@ use PML::Tokenizer;
 has 'tokenizer' => ( is => 'lazy' );
 
 has 'is_paragraph_open' => ( is => 'rwp' );
+has 'is_column_open'    => ( is => 'rwp' );
+has 'is_row_open' 	    => ( is => 'rwp' );
 has 'stack'			    => ( is => 'rwp' );
-has 'html'			    => ( is => 'rwp' );
+
+
+has 'html_chunks'	     => ( is => 'rwp' );
+has 'html_chunk_pointer' => ( is => 'rwp' );
 
 # ------------------------------------------------------------------------------
 
@@ -25,21 +30,33 @@ sub format {
 	
 	$pml || $self->fatal("Must supply 'pml' to HTMLFormatter");
 
-	my $html 	  = '';
+	
 	my @tokens 	  = @{$self->tokenizer->tokenize( $pml )->tokens};	
 
 	$self->_set_stack([]);
 	$self->_set_is_paragraph_open(false);
-	$self->_set_html( '' );
+	$self->_set_is_column_open(false);
+	$self->_set_is_row_open(false);
 
-	TRACE "-----------------------------------------";
-	TRACE "BEGIN HTML FORMAT";
+
+	$self->_set_html_chunks([]);
+	$self->_set_html_chunk_pointer(0);
+
+	my $tmp_column_count = 0;
+
+	# TODO html target??
+
+	#TRACE "-----------------------------------------";
+	#TRACE "BEGIN HTML FORMAT";
 	
 	my $tmp_row_html = '';
+	my %tmp_row_data = ();
 
-	for my $token (@tokens) {
+	for my $token (@tokens) {		
 		
 		my $type = $token->{type};
+
+		#TRACE "[Type: $type]";
 
 		if ($type eq 'STRING') {
 			$self->_open_paragraph_if_not_open;
@@ -69,7 +86,7 @@ sub format {
 				$self->_set_is_paragraph_open(false);
 			}
 			else {
-				$html .= '<p>';
+				$self->_append_to_html('<p>');
 				$self->_set_is_paragraph_open(true);
 			}
 		}
@@ -87,10 +104,58 @@ sub format {
 		}
 
 		# ROW
-		# TODO ...
+		elsif ($type eq 'ROW') {			
+
+			if ($self->is_row_open) {
+				# If a column is still open, then close it
+				if ($self->is_column_open) {					
+					$self->_close_paragraph_if_open;
+					$self->_append_to_html('</div>');
+					$self->_set_is_column_open(false);	
+				}
+
+
+				# If there's already a row open, then this must close it.
+				$self->_set_is_row_open(false);
+				$self->_close_paragraph_if_open;
+
+				$self->html_chunks->[ $self->html_chunk_pointer ] =
+							'<div class="clearfix col-'.$tmp_column_count.'">'
+							. $self->html_chunks->[ $self->html_chunk_pointer ]
+							. '</div>';
+
+			
+
+				$tmp_column_count = 0; # Reset count
+			}
+			else {
+				# Not already a row open, so open one
+				%tmp_row_data = (rows=>[]);
+				$self->_set_is_row_open(true);			
+			}
+			
+			# Start or move to a new html chunk
+			$self->_inc_chunk_pointer;
+		}
 
 		# COLUMN
-		# TODO ...
+		elsif ($type eq 'COLUMN') {			
+
+			unless ($self->is_row_open) {
+				$self->fatal("Column outside of row");
+			}
+			if ($self->is_column_open) {
+				#TRACE "Column is open - closing";
+				$self->_close_paragraph_if_open;
+				$self->_append_to_html('</div>');				
+			}
+			
+			# If a previous paragraph was open, then we want to
+			# close it before we start a new column.
+			$tmp_column_count++;
+			$self->_append_to_html('<div class="column">');
+			$self->_set_is_column_open(true);
+		}
 
 		# IMAGE
 		elsif ($type eq 'IMAGE') {
@@ -117,7 +182,9 @@ sub format {
 		# LINK
 		elsif ($type eq 'LINK') {
 			$self->_open_paragraph_if_not_open;
-			$self->_append_to_html('<a href="'.$token->{href}.'">'
+			$self->_append_to_html('<a href="'.$token->{href}.'"'
+				  .($token->{href}=~/^http/?' target="_new"':'')  # External links
+				  .'>'
 				  .($token->{text}?$token->{text}:$token->{href})
 				  .'</a>');
 		}
@@ -131,15 +198,32 @@ sub format {
 		if ($tag eq 'PARA') { $self->_append_to_html('</p>') }
 	}
 
-	return $self->html;
+	use Data::Dumper;
+	print Dumper $self->html_chunks;
+
+	return join '', @{$self->html_chunks};
 }
 
 # ------------------------------------------------------------------------------
 
 sub _append_to_html {
 	my ($self, $text_to_append) = @_;
-	TRACE "Append '$text_to_append' to html";
-	$self->_set_html( $self->html . $text_to_append );
+	#TRACE "Append '$text_to_append' to html chunk '".$self->html_chunk_pointer."'";
+
+	$self->html_chunks->[$self->html_chunk_pointer] .= $text_to_append;
+	#$self->_set_html( $self->html_buffer . $text_to_append );
+}
+
+# ------------------------------------------------------------------------------
+
+sub _inc_chunk_pointer {
+	my ($self) = @_;
+
+	# Increment if there's content in the current chunk, otherwise carry on using it
+	if ($self->html_chunks->[$self->html_chunk_pointer]) {
+		$self->_set_html_chunk_pointer( $self->html_chunk_pointer + 1 );
+	}
+	return;
 }
 
 # ------------------------------------------------------------------------------
@@ -150,6 +234,21 @@ sub _open_paragraph_if_not_open {
 		$self->_append_to_html('<p>');
 		$self->_set_is_paragraph_open(true);
 		$self->_add_to_stack('PARA');
+		#TRACE "Close paragaph";
+	}
+}
+
+# ------------------------------------------------------------------------------
+
+sub _close_paragraph_if_open {
+	my ($self) = @_;
+	if ($self->is_paragraph_open) {
+		$self->_append_to_html('</p>');
+		$self->_set_is_paragraph_open(false);
+		my $tag = $self->_pop_from_stack;
+		if ($tag ne 'PARA') {
+			$self->fatal("_close_paragraph_if_open expected PARA at end of stack");
+		}
 	}
 }
 
@@ -178,7 +277,7 @@ sub _output_simple {
 
 sub _add_to_stack {
 	my ($self, $tag) = @_;
-	TRACE "Add '$tag' to stack";
+	#TRACE "Add '$tag' to stack";
 	unshift @{$self->stack}, $tag;
 }
 
@@ -187,7 +286,7 @@ sub _add_to_stack {
 sub _pop_from_stack {
 	my ($self, $stack_ref) = @_;
 	my $tag = shift @{$self->stack};
-	TRACE "Pop '$tag' from stack";
+	#TRACE "Pop '$tag' from stack";
 	return $tag;
 }
 
@@ -203,7 +302,7 @@ sub _is_tag_matched {
 sub fatal {
 	my ($self, @msg) = @_;
 	my $msg = join '',@msg;
-	#ERROR "!!Tokenizer Error: $msg!!";
+	ERROR "!!HTMLFormatter Error: $msg!!";
 	die "$msg\n\n";
 }
 

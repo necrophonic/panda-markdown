@@ -43,12 +43,16 @@ subtest "Paragraphs" => sub {
 subtest "Links" => sub {
 	my $formatter = PML::HTMLFormatter->new;
 	is($formatter->format("[[http://google.com]]")
-	  ,q|<p><a href="http://google.com">http://google.com</a></p>|
-	  ,'Simple link');
+	  ,q|<p><a href="http://google.com" target="_new">http://google.com</a></p>|
+	  ,'Simple external link');
+
+	is($formatter->format("[[/assets/something]]")
+	  ,q|<p><a href="/assets/something">/assets/something</a></p>|
+	  ,'Simple internal link');
 
 	is($formatter->format("[[http://google.com|Google]]")
-	  ,q|<p><a href="http://google.com">Google</a></p>|
-	  ,'Simple link with alt text');
+	  ,q|<p><a href="http://google.com" target="_new">Google</a></p>|
+	  ,'Simple external link with alt text');
 
 	is($formatter->format("Text [[a]] Other Text")
 	  ,q|<p>Text <a href="a">a</a> Other Text</p>|
@@ -101,6 +105,14 @@ subtest "Headers" => sub {
 	is($formatter->format('##3|Blah##')
 	  ,q|<h3>Blah</h3>|
 	  ,"Independant header (level 3)");
+};
+
+
+subtest "Rows and columns" => sub {
+	my $formatter = PML::HTMLFormatter->new;
+	is($formatter->format('@@||a||b@@')
+	  ,q|<div class="clearfix col-2"><div class="column"><p>a</p></div><div class="column"><p>b</p></div></div>|
+	  ,"2-col row");
 };
 
 
