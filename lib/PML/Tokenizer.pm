@@ -7,7 +7,7 @@ use warnings;
 use boolean;
 
 #use Log::Log4perl qw(:easy);
-#Log::Log4perl->easy_init($TRACE);
+#Log::Log4perl->easy_init($#TRACE);
 
 use Moo;
 use HTML::Escape;
@@ -236,13 +236,14 @@ sub _tokenize {
 
 			# Didn't complete header sequence.
 			# Requeue the header char and the char we just read.			
-			if ($self->_is_tmp_string_token_open) {
-				#TRACE "  > Plain header char (uncompleted sequence)";
-				$self->_requeue( $SYM_HEADER );				
-				$self->_requeue( $char );
-				$self->_move_to('data');
-				next;
+			unless ($self->_is_tmp_string_token_open) {
+				$self->_emit_token;
+				$self->_create_token({type=>'STRING',content=>''})
 			}
+			$self->_append_char_to_tmp_string_token( $SYM_HEADER );
+			$self->_requeue( $char );
+			$self->_move_to('data');		
+			next;
 		}
 
 		# --------------
@@ -348,22 +349,25 @@ sub _tokenize {
 					$self->_emit_token({type=>'QUOTE'}) 	if $1 eq $SYM_QUOTE;
 
 					$self->_move_to('start_string');
-					$self->tmp_style_context(undef);					
+					$self->tmp_style_context(undef);		
+					next;			
 				}
 			}
 
 			# Was potential style but didn't complete the sequence.
 			# If there's an open string token then append the style char to it,
-			# requeue the next char, and move back to string state.
-			if ($self->_is_tmp_string_token_open) {
-				#TRACE "  > Plain style char (uncompleted sequence)";
-				$self->_append_char_to_tmp_string_token( $self->tmp_style_context );
-				$self->_requeue;
-				$self->_move_to('string');
-				next;
+			# requeue the next char, and move back to string state.			
+			unless ($self->_is_tmp_string_token_open) {
+				# Need to open a new string
+				$self->_emit_token;
+				$self->_create_token({type=>'STRING',content=>''});
 			}
-
-			$self->tmp_style_context(undef);
+			#TRACE "  > Plain style char (uncompleted sequence)";
+			$self->_append_char_to_tmp_string_token( $self->tmp_style_context );
+			$self->_requeue;
+			$self->_move_to('string');
+			$self->tmp_style_context(undef);			
+			
 			next;
 		}
 

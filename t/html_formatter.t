@@ -27,6 +27,13 @@ subtest "Simple style formatting" => sub {
 	  ,'PML with strong, underline and emphasis');
 };
 
+subtest "Plain control chars" => sub {
+	my $formatter = PML::HTMLFormatter->new;
+	is($formatter->format('*a"a/a"a_a')
+	  ,q|<p>*a"a/a"a_a</p>|
+	  ,'Plain chars output as string text');
+};
+
 
 subtest "Paragraphs" => sub {
 	my $formatter = PML::HTMLFormatter->new;
@@ -105,6 +112,12 @@ subtest "Headers" => sub {
 	is($formatter->format('##3|Blah##')
 	  ,q|<h3>Blah</h3>|
 	  ,"Independant header (level 3)");
+
+	subtest "Bad header sequence" => sub {
+		is($formatter->format('#39')
+	  	  ,q|<p>#39</p>|
+	  	  ,"Single hash becomes string");	
+	};
 };
 
 

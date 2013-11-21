@@ -9,8 +9,6 @@ use boolean;
 #use Log::Log4perl qw(:easy);
 #Log::Log4perl->easy_init($#TRACE);
 
-
-
 use Moo;
 use PML::Tokenizer;
 
@@ -31,7 +29,7 @@ sub format {
 	my ($self, $pml) = @_;
 	
 	$pml || $self->fatal("Must supply 'pml' to HTMLFormatter");
-	
+
 	my @tokens 	  = @{$self->tokenizer->tokenize( $pml )->tokens};	
 
 	$self->_set_stack([]);
@@ -47,13 +45,15 @@ sub format {
 
 	# TODO html target??
 
+
+
 	#TRACE "-----------------------------------------";
 	#TRACE "BEGIN HTML FORMAT";
 	
 	my $tmp_row_html = '';
 	my %tmp_row_data = ();
 
-	for my $token (@tokens) {		
+	for my $token (@tokens) {
 		
 		my $type = $token->{type};
 
