@@ -7,7 +7,7 @@ use warnings;
 use boolean;
 
 #use Log::Log4perl qw(:easy);
-#Log::Log4perl->easy_init($#TRACE);
+#Log::Log4perl->easy_init($TRACE);
 
 use Moo;
 use PML::Tokenizer;
@@ -205,9 +205,8 @@ sub format {
 # ------------------------------------------------------------------------------
 
 sub _append_to_html {
-	my ($self, $text_to_append) = @_;
+	my ($self, $text_to_append) = @_;	
 	#TRACE "Append '$text_to_append' to html chunk '".$self->html_chunk_pointer."'";
-
 	$self->html_chunks->[$self->html_chunk_pointer] .= $text_to_append;
 	#$self->_set_html( $self->html_buffer . $text_to_append );
 }
