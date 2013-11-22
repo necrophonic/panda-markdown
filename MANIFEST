@@ -1,6 +1,5 @@
-lib/PML.pm
 lib/PML/Tokenizer.pm
-lib/PML/Tokenizer/Token.pm
+lib/PML/HTMLFormatter.pm
 README.md
 Makefile.PL
 MANIFEST
