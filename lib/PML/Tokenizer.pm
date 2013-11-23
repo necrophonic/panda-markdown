@@ -75,11 +75,6 @@ sub tokenize {
 	$self->tmp_token(undef);
 	$self->tmp_row_context(0);
 
-
-	
-
-
-
 	$self->_tokenize;
 	return $self;
 }
@@ -347,8 +342,8 @@ sub _tokenize {
 					$self->_emit_token({type=>'UNDERLINE'}) if $1 eq $SYM_UNDERLINE;
 					$self->_emit_token({type=>'EMPHASIS'}) 	if $1 eq $SYM_EMPHASIS;
 					$self->_emit_token({type=>'QUOTE'}) 	if $1 eq $SYM_QUOTE;
-
-					$self->_move_to('start_string');
+					
+					$self->_move_to('data');
 					$self->tmp_style_context(undef);		
 					next;			
 				}
