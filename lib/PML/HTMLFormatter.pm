@@ -209,7 +209,7 @@ sub _inc_chunk_pointer {
 sub _open_paragraph_if_not_open {
 	my ($self) = @_;
 	unless ($self->is_paragraph_open) {		
-		$self->_append_to_html('<p>');
+		$self->_append_to_html( $self->_html_for_paragraph );
 		$self->_set_is_paragraph_open(true);
 		$self->_add_to_stack('PARA');
 		TRACE "Close paragaph";
@@ -221,7 +221,7 @@ sub _open_paragraph_if_not_open {
 sub _close_paragraph_if_open {
 	my ($self) = @_;
 	if ($self->is_paragraph_open) {
-		$self->_append_to_html('</p>');
+		$self->_append_to_html( $self->_html_for_paragraph($END));
 		$self->_set_is_paragraph_open(false);
 		my $tag = $self->_pop_from_stack;
 		if ($tag ne 'PARA') {
@@ -245,7 +245,7 @@ sub _output_simple {
 	else {
 		# Check whether paragaph is open and open if not.
 		unless ($self->is_paragraph_open) {
-			$self->_append_to_html('<p>');
+			$self->_append_to_html( $self->_html_for_paragraph );
 			unshift @{$self->stack}, 'PARA';
 			$self->_set_is_paragraph_open(true);
 		}		
