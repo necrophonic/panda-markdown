@@ -82,6 +82,27 @@ subtest "Internal methods" => sub {
 		is_deeply($parser->token,{type=>'LINK'},'Get previous token');
 	};
 
+	# -------------------------------------------
+
+	subtest "_switch_state" => sub {
+		# No current state
+		$parser->state(undef);
+		$parser->_switch_state('data');
+		is($parser->state,'data','Switched to data state');
+
+		# New state 
+		$parser->_switch_state('end_of_data');
+		is($parser->state,'end_of_data','Switched to end_of_data state');
+	};
+
+	# -------------------------------------------
+
+	subtest "_raise_parse_error" => sub {
+		throws_ok { $parser->_raise_parse_error('my error') }
+			qr/Encountered parse error \[my error]/,
+			"Dies as expected";
+	};
+
 };
 
 

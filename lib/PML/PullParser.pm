@@ -20,6 +20,12 @@ has 'state'					=> (is=>'rw');
 
 has 'token' => (is=>'rw'); # Output token
 
+
+my $SYM_STRONG		= '*';
+my $SYM_EMPHASIS	= '/';
+my $SYM_UNDERLINE	= '_';
+
+
 # ------------------------------------------------------------------------------
 
 sub BUILD {
@@ -52,11 +58,14 @@ sub get_next_token {
 		my $state = $self->state;
 		my $char = $self->pml_chars->[$self->pointer] || 'EOF';
 
-		$self->pointer($self->pointer+1);
+		$self->_increment_pointer;
 		TRACE "State is '$state'";
 		TRACE "  Read char [ ".($char||'EOF')." ]";
 
 		if ($state eq 'data') {
+
+			if ($char eq $SYM_STRONG)   { $self->_switch_state('strong');   next; }
+			if ($char eq $SYM_EMPHASIS) { $self->_switch_state('emphasis'); next; }
 
 			if ($char eq 'EOF') {
 				$self->_switch_state('end_of_data');
@@ -72,11 +81,61 @@ sub get_next_token {
 
 		# ---------------------------------------
 
+		if ($state eq 'strong') {
+
+			if ($char eq $SYM_STRONG) {		
+				$self->_create_token({type=>'STRONG'});
+				$self->_switch_state('data');				
+				next;
+			}
+
+			if ($char eq 'EOF') {
+				$self->_append_to_string_token( $SYM_STRONG );
+				$self->_switch_state('end_of_data');
+				next;
+			}
+
+			# "Anything else"
+			# Append a star (*) to the current string token, reconsume char
+			# and switch to data state.
+			$self->_append_to_string_token( $SYM_STRONG );
+			$self->_decrement_pointer;
+			$self->_switch_state('data');
+			next;
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'emphasis') {
+
+			if ($char eq $SYM_EMPHASIS) {		
+				$self->_create_token({type=>'EMPHASIS'});
+				$self->_switch_state('data');				
+				next;
+			}
+
+			if ($char eq 'EOF') {
+				$self->_append_to_string_token( $SYM_EMPHASIS );
+				$self->_switch_state('end_of_data');
+				next;
+			}
+
+			# "Anything else"
+			# Append a foreslash (/) to the current string token, reconsume char
+			# and switch to data state.
+			$self->_append_to_string_token( $SYM_EMPHASIS );
+			$self->_decrement_pointer;
+			$self->_switch_state('data');
+			next;
+		}
+
+		# ---------------------------------------
+
 		if ($state eq 'end_of_data') {
 			DEBUG "End of data reached - finish parse";
 			$self->has_finished_parsing(1);
 			$self->_emit_token;
-			next;
+			last;
 		}
 
 		# ---------------------------------------
@@ -88,7 +147,11 @@ sub get_next_token {
 
 	}
 
-	return $self->token || 0;
+	my $token = $self->token || 0;
+
+	$self->token(undef);
+
+	return $token;
 }
 
 # ------------------------------------------------------------------------------
@@ -100,11 +163,16 @@ sub get_all_tokens {
 	# we run out of document! Otherwise we just return what we have.
 	unless ($self->has_finished_parsing) {
 		while (my $next_token = $self->get_next_token) {
-			push @{$self->tokens}, $next_token;
+		#	push @{$self->tokens}, $next_token;			
 		}
 	}
 	return wantarray ? @{$self->tokens} : $self->tokens;	
 }
+
+# ------------------------------------------------------------------------------
+
+sub _increment_pointer { $_[0]->pointer( $_[0]->pointer + 1) }
+sub _decrement_pointer { $_[0]->pointer( $_[0]->pointer - 1); TRACE "  -> Requeue char" }
 
 # ------------------------------------------------------------------------------
 
@@ -186,9 +254,7 @@ sub _create_token {
 	TRACE "  Create new token [ ".$token->{type}." ]";
 	my $old_temporary_token = undef;
 
-	if ($self->temporary_token) {
-		$old_temporary_token = $self->temporary_token;
-		TRACE '  -> Emitting previous temporary token [ '.$old_temporary_token->{type}.' ]';
+	if ($self->temporary_token) {			
 		$self->_emit_token;
 	}
 
