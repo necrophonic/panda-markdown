@@ -36,9 +36,10 @@ my $SYM_IMAGE_START				= '{';
 my $SYM_IMAGE_END				= '}';
 my $SYM_IMAGE_CONTEXT_SWITCH	= '|';
 
-my $SYM_NEWLINE	= "\n";
+my $SYM_NEWLINE			= "\n";
+my $SYM_SECTION_BREAK	= '~';
+my $SYM_HEADER 			= '#';
 
-my $SYM_HEADER = '#';
 
 
 # ------------------------------------------------------------------------------
@@ -424,9 +425,37 @@ sub get_next_token {
 				next;
 			}
 
+			if ($char eq $SYM_SECTION_BREAK) {
+				$self->_switch_state('section-break');
+				next;
+			}
+
 			# Anything else
 			$self->_switch_state('data');
 			$self->_decrement_pointer;
+			next;
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'section-break') {
+
+			if ($char eq $SYM_SECTION_BREAK) {
+				$self->_create_token({type=>'SECTIONBREAK'});
+				$self->_switch_state('data');
+				next;
+			}
+
+			if ($char eq 'EOF') {
+				$self->_append_to_string_token( $SYM_SECTION_BREAK );
+				$self->_switch_state('end_of_data');
+				next;
+			}
+			
+			# Anything else
+			$self->_append_to_string_token( $SYM_SECTION_BREAK );
+			$self->_decrement_pointer;
+			$self->_switch_state('data');
 			next;
 		}
 

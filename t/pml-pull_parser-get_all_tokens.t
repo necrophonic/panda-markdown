@@ -26,6 +26,7 @@ my $parser;
 	test_image_markup();
 	test_newline_markup();
 	test_header_markup();
+	test_section_break_markup();
 
 
 done_testing();
@@ -202,6 +203,19 @@ sub test_newline_markup {
 
 	};
 	return;
+}
+
+# ------------------------------------------------------------------------------
+
+sub test_section_break_markup {
+	subtest "Test section_break markup" => sub {
+
+		subtest "Simple section break" => sub {
+			$parser = $CLASS->new(pml => '~~');
+			my @tokens = $parser->get_all_tokens;
+			is(get_tokens_string(\@tokens),'SECTIONBREAK','Section break');	
+		};
+	};
 }
 
 # ------------------------------------------------------------------------------
