@@ -12,7 +12,9 @@ has 'pml'				=> (is=>'rw');
 has 'pml_chars'			=> (is=>'rw');
 has 'num_pml_chars'		=> (is=>'rw');
 
-has 'temporary_token'		=> (is=>'rw');
+has 'temporary_token'			=> (is=>'rw');
+has 'temporary_token_context'	=> (is=>'rw');
+
 has 'tokens'				=> (is=>'rw');
 has 'has_finished_parsing'	=> (is=>'rw');
 has 'pointer'				=> (is=>'rw');
@@ -25,6 +27,10 @@ my $SYM_STRONG		= '*';
 my $SYM_EMPHASIS	= '/';
 my $SYM_UNDERLINE	= '_';
 my $SYM_DELETE		= '-';
+
+my $SYM_LINK_START	= '[';
+my $SYM_LINK_END	= ']';
+my $SYM_LINK_CONTEXT_SWITCH	= '|';
 
 
 # ------------------------------------------------------------------------------
@@ -69,6 +75,11 @@ sub get_next_token {
 			if ($char eq $SYM_EMPHASIS) { $self->_switch_state('emphasis');  next; }
 			if ($char eq $SYM_UNDERLINE){ $self->_switch_state('underline'); next; }
 			if ($char eq $SYM_DELETE)	{ $self->_switch_state('delete');	 next; }
+
+			if ($char eq $SYM_LINK_START) {
+				$self->_switch_state('link-start');
+				next;
+			}
 
 			if ($char eq 'EOF') {
 				$self->_switch_state('end_of_data');
@@ -180,6 +191,103 @@ sub get_next_token {
 			$self->_decrement_pointer;
 			$self->_switch_state('data');
 			next;
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'link-start') {
+
+			if ($char eq $SYM_LINK_START) {
+				$self->_create_token({type=>'LINK',href=>'',text=>''});
+				$self->temporary_token_context('href');
+				$self->_switch_state('link-href');
+				next;
+			}
+
+			if ($char eq 'EOF') {
+				$self->_append_to_string_token( $SYM_LINK_START );
+				$self->_switch_state('end_of_data');
+				next;
+			}
+
+			# "Anything else"
+			# Append an open square bracket ([) to the current string token,
+			# reconsume char and switch to data state.
+			$self->_append_to_string_token( $SYM_LINK_START );
+			$self->_decrement_pointer;
+			$self->_switch_state('data');
+			next;
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'link-href') {
+
+			if ($char eq $SYM_LINK_CONTEXT_SWITCH) { $self->_switch_state('link-text'); next }
+			if ($char eq $SYM_LINK_END) 		   { $self->_switch_state('link-end');  next }
+			
+			if ($char eq 'EOF') {
+				$self->_raise_parse_error("Unexpected 'EOF' while parsing link href");
+			}
+
+			# "Anything else"
+			# Append to open link token href
+			if ($self->temporary_token->{type} eq 'LINK') {
+				$self->temporary_token->{href} .= $char;
+				next;
+			}
+
+			# Oops
+			$self->_raise_parse_error("Attempt to append link href data to non-link token");
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'link-text') {
+
+			if ($char eq $SYM_LINK_END) {
+				$self->_switch_state('link-end');
+				next;
+			}
+
+			if ($char eq 'EOF') {
+				$self->_raise_parse_error("Unexpected 'EOF' while parsing link text");
+			}
+
+			# "Anything else"
+			# Append to open link token href
+			if ($self->temporary_token->{type} eq 'LINK') {
+				$self->temporary_token->{text} .= $char;
+				next;
+			}
+
+			# Oops
+			$self->_raise_parse_error("Attempt to append link text data to non-link token");
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'link-end') {
+
+			if ($char eq $SYM_LINK_END) {
+				$self->_switch_state('data');
+				next;
+			}
+
+			if ($char eq 'EOF') {
+				$self->_raise_parse_error("Unexpected 'EOF' while parsing link end");
+			}
+
+			# "Anything else"
+			# Append to href or text depending on context
+			my $context = $self->temporary_token_context;
+			
+			if ($context =~ /^(?:href|text)$/o) {
+				$self->temporary_token->{$context} .= $char;
+				next;
+			}
+
+			$self->_raise_parse_error("Missing or bad link token context");
 		}
 
 		# ---------------------------------------
@@ -310,6 +418,9 @@ sub _create_token {
 	if ($self->temporary_token) {			
 		$self->_emit_token;
 	}
+
+	# Clear any current context
+	$self->temporary_token_context(undef);
 
 	$self->temporary_token( $token );
 	return undef;

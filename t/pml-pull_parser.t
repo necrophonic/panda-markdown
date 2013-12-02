@@ -12,7 +12,7 @@ Readonly my $CLASS => 'PML::PullParser';
 use_ok $CLASS;
 
 use Log::Log4perl qw(:easy);
-#Log::Log4perl->easy_init($OFF);
+Log::Log4perl->easy_init($OFF);
 
 
 my $parser = undef;
@@ -46,7 +46,12 @@ subtest "Internal methods" => sub {
 		# Now have previous token
 		$parser->_create_token({type=>'LINK'});		
 		is_deeply($parser->token, {type=>'STRING'}, 'Emit previous token' );
-		is_deeply($parser->temporary_token,{type=>'LINK'}, 'New token created');		
+		is_deeply($parser->temporary_token,{type=>'LINK'}, 'New token created');
+
+		# Clear context on new token
+		$parser->temporary_token_context('href');
+		$parser->_create_token({type=>'STRING'});
+		is($parser->temporary_token_context, undef, 'Context cleared on create new');
 	};
 
 	# -------------------------------------------
