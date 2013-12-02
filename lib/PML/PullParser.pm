@@ -28,9 +28,13 @@ my $SYM_EMPHASIS	= '/';
 my $SYM_UNDERLINE	= '_';
 my $SYM_DELETE		= '-';
 
-my $SYM_LINK_START	= '[';
-my $SYM_LINK_END	= ']';
-my $SYM_LINK_CONTEXT_SWITCH	= '|';
+my $SYM_LINK_START				= '[';
+my $SYM_LINK_END				= ']';
+my $SYM_LINK_CONTEXT_SWITCH		= '|';
+
+my $SYM_IMAGE_START				= '{';
+my $SYM_IMAGE_END				= '}';
+my $SYM_IMAGE_CONTEXT_SWITCH	= '|';
 
 
 # ------------------------------------------------------------------------------
@@ -78,6 +82,11 @@ sub get_next_token {
 
 			if ($char eq $SYM_LINK_START) {
 				$self->_switch_state('link-start');
+				next;
+			}
+
+			if ($char eq $SYM_IMAGE_START) {
+				$self->_switch_state('image-start');
 				next;
 			}
 
@@ -288,6 +297,107 @@ sub get_next_token {
 			}
 
 			$self->_raise_parse_error("Missing or bad link token context");
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'image-start') {
+
+			if ($char eq $SYM_IMAGE_START) {
+				$self->_create_token({type=>'IMAGE',src=>'',options=>''});
+				$self->temporary_token_context('src');
+				$self->_switch_state('image-src');
+				next;
+			}
+
+			if ($char eq 'EOF') {
+				$self->_append_to_string_token( $SYM_IMAGE_START );
+				$self->_switch_state('end_of_data');
+				next;
+			}
+
+			# "Anything else"
+			# Append an open curly bracket ({}) to the current string token,
+			# reconsume char and switch to data state.
+			$self->_append_to_string_token( $SYM_IMAGE_START );
+			$self->_decrement_pointer;
+			$self->_switch_state('data');
+			next;
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'image-src') {
+
+			if ($char eq $SYM_IMAGE_CONTEXT_SWITCH) { $self->_switch_state('image-options'); next }
+			
+			if ($char eq $SYM_IMAGE_END) {
+				$self->_switch_state('image-end');
+				next;
+			}
+			
+			if ($char eq 'EOF') {
+				$self->_raise_parse_error("Unexpected 'EOF' while parsing image src");
+			}
+
+			# "Anything else"
+			# Append to open link token href
+			if ($self->temporary_token->{type} eq 'IMAGE') {
+				$self->temporary_token->{src} .= $char;
+				next;
+			}
+
+			# Oops
+			$self->_raise_parse_error("Attempt to append image src data to non-image token");
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'image-options') {
+
+			if ($char eq $SYM_IMAGE_END) {
+				$self->_switch_state('image-end');
+				next;
+			}
+
+			if ($char eq 'EOF') {
+				$self->_raise_parse_error("Unexpected 'EOF' while parsing image options");
+			}
+
+			# "Anything else"
+			# Append to open link token href
+			if ($self->temporary_token->{type} eq 'IMAGE') {
+				$self->temporary_token->{options} .= $char;
+				next;
+			}
+
+			# Oops
+			$self->_raise_parse_error("Attempt to append image options data to non-image token");
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'image-end') {
+
+			if ($char eq $SYM_IMAGE_END) {
+				$self->_switch_state('data');
+				next;
+			}
+
+			if ($char eq 'EOF') {
+				$self->_raise_parse_error("Unexpected 'EOF' while parsing image end");
+			}
+
+			# "Anything else"
+			# Append to src or options depending on context
+			my $context = $self->temporary_token_context;
+			
+			if ($context =~ /^(?:src|options)$/o) {
+				$self->temporary_token->{$context} .= $char;
+				next;
+			}
+
+			$self->_raise_parse_error("Missing or bad image token context");
 		}
 
 		# ---------------------------------------

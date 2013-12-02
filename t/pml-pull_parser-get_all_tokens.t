@@ -23,6 +23,7 @@ my $parser;
 
 	test_simple_markup();
 	test_link_markup();
+	test_image_markup();
 
 
 done_testing();
@@ -128,3 +129,27 @@ sub test_link_markup {
 
 # ------------------------------------------------------------------------------
 
+sub test_image_markup {
+	subtest "Test image markup" => sub {
+
+		subtest "Simple image" => sub {
+			$parser = $CLASS->new(pml => "Look at this {{cat.jpg}} Nice huh?");
+			my @tokens = $parser->get_all_tokens;
+			is(get_tokens_string(\@tokens),'STRING,IMAGE,STRING','Image with just src');
+			is($tokens[1]->{src}, 'cat.jpg', 'Src set ok');
+			is($tokens[1]->{options}, '', 'Options is null');
+		};
+
+		subtest "Simple image with options" => sub {
+			$parser = $CLASS->new(pml => "Look at this {{cat.jpg|>>,W29}} Nice huh?");
+			my @tokens = $parser->get_all_tokens;
+			is(get_tokens_string(\@tokens),'STRING,IMAGE,STRING','Image with just src');
+			is($tokens[1]->{src}, 'cat.jpg', 'Src set ok');
+			is($tokens[1]->{options}, '>>,W29', 'Options set ok');
+		};
+
+	};
+	return;
+}
+
+# ------------------------------------------------------------------------------
