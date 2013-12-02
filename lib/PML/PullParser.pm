@@ -38,6 +38,8 @@ my $SYM_IMAGE_CONTEXT_SWITCH	= '|';
 
 my $SYM_NEWLINE	= "\n";
 
+my $SYM_HEADER = '#';
+
 
 # ------------------------------------------------------------------------------
 
@@ -55,7 +57,7 @@ sub BUILD {
 	$self->has_finished_parsing(0);
 
 	$self->pointer(0);
-	$self->state('data');
+	$self->state('newline');
 
 	return;
 }
@@ -412,23 +414,64 @@ sub get_next_token {
 
 		if ($state eq 'newline') {
 
-			if ($char eq 'EOF') {
-				$self->_switch_state('end_of_data');
-				next;
-			}
+			if ($char eq 'EOF') 	   { $self->_switch_state('end_of_data'); 	  next }
+			if ($char eq $SYM_NEWLINE) { $self->_create_token({type=>'NEWLINE'}); next }
+			if ($char eq ' ') 		   { next }
 
-			if ($char eq $SYM_NEWLINE) {
-				$self->_create_token({type=>'NEWLINE'});				
-				next;
-			}
-
-			if ($char eq ' ') {
+			if ($char eq $SYM_HEADER) {
+				$self->_create_token({type=>'HEADER',level=>1});
+				$self->_switch_state('header');
 				next;
 			}
 
 			# Anything else
 			$self->_switch_state('data');
 			$self->_decrement_pointer;
+			next;
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'header') {
+
+			if ($char eq 'EOF') {
+				my $cur_level = $self->temporary_token->{level};
+				$self->_discard_token;
+				my $new_string = $SYM_HEADER x $cur_level;
+				$self->_create_token({type=>'STRING',content=>$new_string});
+				$self->_switch_state('end_of_data');
+				next;
+			}
+
+			if ($char eq ' ') { next }			
+
+			if ($char eq $SYM_HEADER) {
+				$self->temporary_token->{level}++;
+				next;
+			}
+
+			# Anything else
+			$self->_switch_state('header-text');
+			$self->_decrement_pointer;
+			next;
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'header-text') {
+
+			if ($char eq 'EOF') {
+				$self->_switch_state('end_of_data');			
+				next;
+			}
+
+			if ($char eq $SYM_NEWLINE) {
+				$self->_switch_state('data');
+				next;
+			}
+
+			# Anything else
+			$self->temporary_token->{text} .= $char;
 			next;
 		}
 
@@ -443,10 +486,8 @@ sub get_next_token {
 
 		# ---------------------------------------
 
-		# Catch error to stop infinite looping
-		if ($self->pointer > $self->num_pml_chars) {
-			$self->_raise_parse_error("Overran end of data");
-		}
+		# Shouldn't ever get here!
+		$self->_raise_parse_error("Invalid state!");
 
 	}
 

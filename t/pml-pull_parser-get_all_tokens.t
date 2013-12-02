@@ -25,6 +25,7 @@ my $parser;
 	test_link_markup();
 	test_image_markup();
 	test_newline_markup();
+	test_header_markup();
 
 
 done_testing();
@@ -157,6 +158,29 @@ sub test_image_markup {
 
 	};
 	return;
+}
+
+# ------------------------------------------------------------------------------
+
+sub test_header_markup {
+	subtest "Test header markup" => sub {
+
+		subtest "Simple headers 1-6" => sub {
+			$parser = $CLASS->new(pml => qq|# Header level 1|);
+			my @tokens = $parser->get_all_tokens;
+			is(get_tokens_string(\@tokens),'HEADER','Header token');
+			is($tokens[0]->{level},1,'Header level is 1');
+			is($tokens[0]->{text},'Header level 1', 'Header text is correct');
+		};
+
+		subtest "In line becomes string" => sub {
+			$parser = $CLASS->new(pml => qq|String then # Header level 1|);
+			my @tokens = $parser->get_all_tokens;
+			is(get_tokens_string(\@tokens),'STRING','Just a string token');
+			is($tokens[0]->{content},'String then # Header level 1', 'Content correct');
+		};
+
+	};
 }
 
 # ------------------------------------------------------------------------------
