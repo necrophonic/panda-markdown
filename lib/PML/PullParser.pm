@@ -36,6 +36,8 @@ my $SYM_IMAGE_START				= '{';
 my $SYM_IMAGE_END				= '}';
 my $SYM_IMAGE_CONTEXT_SWITCH	= '|';
 
+my $SYM_NEWLINE	= "\n";
+
 
 # ------------------------------------------------------------------------------
 
@@ -87,6 +89,12 @@ sub get_next_token {
 
 			if ($char eq $SYM_IMAGE_START) {
 				$self->_switch_state('image-start');
+				next;
+			}
+
+			if ($char eq $SYM_NEWLINE) {
+				$self->_create_token({type=>'NEWLINE'});
+				$self->_switch_state('newline');
 				next;
 			}
 
@@ -399,6 +407,30 @@ sub get_next_token {
 
 			$self->_raise_parse_error("Missing or bad image token context");
 		}
+		
+		# ---------------------------------------
+
+		if ($state eq 'newline') {
+
+			if ($char eq 'EOF') {
+				$self->_switch_state('end_of_data');
+				next;
+			}
+
+			if ($char eq $SYM_NEWLINE) {
+				$self->_create_token({type=>'NEWLINE'});				
+				next;
+			}
+
+			if ($char eq ' ') {
+				next;
+			}
+
+			# Anything else
+			$self->_switch_state('data');
+			$self->_decrement_pointer;
+			next;
+		}
 
 		# ---------------------------------------
 
@@ -433,9 +465,7 @@ sub get_all_tokens {
 	# Not finished parsing yet (or started at all) so get_next_token until 
 	# we run out of document! Otherwise we just return what we have.
 	unless ($self->has_finished_parsing) {
-		while (my $next_token = $self->get_next_token) {
-		#	push @{$self->tokens}, $next_token;			
-		}
+		while ($self->get_next_token) {}		
 	}
 	return wantarray ? @{$self->tokens} : $self->tokens;	
 }
@@ -478,6 +508,16 @@ sub _switch_state {
 	my ($self, $switch_to) = @_;
 	TRACE "  Switching to state [ $switch_to ]";
 	$self->state($switch_to);
+}
+
+# ------------------------------------------------------------------------------
+
+# If there's a temporary token, get rid of it
+sub _discard_token {
+	my ($self) = @_;
+	$self->temporary_token(undef);
+	$self->temporary_token_context(undef);
+	return;
 }
 
 # ------------------------------------------------------------------------------

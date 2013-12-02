@@ -11,7 +11,7 @@ Readonly my $CLASS => 'PML::PullParser';
 use_ok $CLASS;
 
 use Log::Log4perl qw(:easy);
-Log::Log4perl->easy_init($OFF);
+#Log::Log4perl->easy_init($OFF);
 
 my $parser;
 
@@ -24,6 +24,7 @@ my $parser;
 	test_simple_markup();
 	test_link_markup();
 	test_image_markup();
+	test_newline_markup();
 
 
 done_testing();
@@ -47,6 +48,12 @@ sub test_simple_markup {
 			$parser = $CLASS->new(pml => 'Simple **PML** to parse');
 			my @tokens = $parser->get_all_tokens;
 			is( get_tokens_string(\@tokens), 'STRING,STRONG,STRING,STRONG,STRING', 'Strong in string' );
+			is($tokens[0]->{content}, 'Simple ',   'Token #1 correct text'	);
+			is($tokens[1]->{type}, 	  'STRONG',    'Token #2 is STRONG'		);
+			is($tokens[2]->{content}, 'PML', 	   'Token #3 correct text'	);
+			is($tokens[3]->{type}, 	  'STRONG',    'Token #4 is STRONG'		);
+			is($tokens[4]->{content}, ' to parse', 'Token #5 correct text'	);
+
 
 			$parser = $CLASS->new(pml => '**Strong** at start');
 			my @tokens = $parser->get_all_tokens;
@@ -146,6 +153,27 @@ sub test_image_markup {
 			is(get_tokens_string(\@tokens),'STRING,IMAGE,STRING','Image with just src');
 			is($tokens[1]->{src}, 'cat.jpg', 'Src set ok');
 			is($tokens[1]->{options}, '>>,W29', 'Options set ok');
+		};
+
+	};
+	return;
+}
+
+# ------------------------------------------------------------------------------
+
+sub test_newline_markup {
+	subtest "Test newline markup" => sub {
+
+		subtest "Single newline" => sub {
+			$parser = $CLASS->new(pml => "First line\nSecond line");
+			my @tokens = $parser->get_all_tokens;
+			is(get_tokens_string(\@tokens),'STRING,NEWLINE,STRING','Single newline in string');
+		};
+
+		subtest "Double newline" => sub {
+			$parser = $CLASS->new(pml => "First line\n\nSecond line");
+			my @tokens = $parser->get_all_tokens;
+			is(get_tokens_string(\@tokens),'STRING,NEWLINE,NEWLINE,STRING','Double newline in string');
 		};
 
 	};

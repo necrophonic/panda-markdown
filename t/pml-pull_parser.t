@@ -108,6 +108,24 @@ subtest "Internal methods" => sub {
 			"Dies as expected";
 	};
 
+	# -------------------------------------------
+
+	subtest "_discard_token" => sub {
+		# Run ok with no token to discard
+		$parser->temporary_token(undef);
+		$parser->temporary_token_context(undef);
+		lives_ok {$parser->_discard_token},
+			"_discard_token() runs ok when no previous token";
+
+		# Discard ok
+		$parser->temporary_token({type=>'STRING',content=>'xyz'});
+		$parser->temporary_token_context('some-context');
+		lives_ok {$parser->_discard_token},
+			"_discard_token() runs ok with previous token";
+		is($parser->temporary_token,		undef, 'Token discarded');
+		is($parser->temporary_token_context,undef, 'Token context discarded');
+	};
+
 };
 
 
