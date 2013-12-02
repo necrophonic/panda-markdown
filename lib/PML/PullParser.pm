@@ -24,6 +24,7 @@ has 'token' => (is=>'rw'); # Output token
 my $SYM_STRONG		= '*';
 my $SYM_EMPHASIS	= '/';
 my $SYM_UNDERLINE	= '_';
+my $SYM_DELETE		= '-';
 
 
 # ------------------------------------------------------------------------------
@@ -64,8 +65,10 @@ sub get_next_token {
 
 		if ($state eq 'data') {
 
-			if ($char eq $SYM_STRONG)   { $self->_switch_state('strong');   next; }
-			if ($char eq $SYM_EMPHASIS) { $self->_switch_state('emphasis'); next; }
+			if ($char eq $SYM_STRONG)   { $self->_switch_state('strong');    next; }
+			if ($char eq $SYM_EMPHASIS) { $self->_switch_state('emphasis');  next; }
+			if ($char eq $SYM_UNDERLINE){ $self->_switch_state('underline'); next; }
+			if ($char eq $SYM_DELETE)	{ $self->_switch_state('delete');	 next; }
 
 			if ($char eq 'EOF') {
 				$self->_switch_state('end_of_data');
@@ -124,6 +127,56 @@ sub get_next_token {
 			# Append a foreslash (/) to the current string token, reconsume char
 			# and switch to data state.
 			$self->_append_to_string_token( $SYM_EMPHASIS );
+			$self->_decrement_pointer;
+			$self->_switch_state('data');
+			next;
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'underline') {
+
+			if ($char eq $SYM_UNDERLINE) {		
+				$self->_create_token({type=>'UNDERLINE'});
+				$self->_switch_state('data');				
+				next;
+			}
+
+			if ($char eq 'EOF') {
+				$self->_append_to_string_token( $SYM_UNDERLINE );
+				$self->_switch_state('end_of_data');
+				next;
+			}
+
+			# "Anything else"
+			# Append an underscore (_) to the current string token, reconsume char
+			# and switch to data state.
+			$self->_append_to_string_token( $SYM_UNDERLINE );
+			$self->_decrement_pointer;
+			$self->_switch_state('data');
+			next;
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'delete') {
+
+			if ($char eq $SYM_DELETE) {		
+				$self->_create_token({type=>'DEL'});
+				$self->_switch_state('data');				
+				next;
+			}
+
+			if ($char eq 'EOF') {
+				$self->_append_to_string_token( $SYM_DELETE );
+				$self->_switch_state('end_of_data');
+				next;
+			}
+
+			# "Anything else"
+			# Append a dash (-) to the current string token, reconsume char
+			# and switch to data state.
+			$self->_append_to_string_token( $SYM_DELETE );
 			$self->_decrement_pointer;
 			$self->_switch_state('data');
 			next;

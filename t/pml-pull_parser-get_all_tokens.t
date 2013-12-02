@@ -50,6 +50,33 @@ subtest "Emphasis" => sub {
 	is( get_tokens_string(\@tokens), 'STRING,EMPHASIS,STRING,EMPHASIS', 'Emphasis at end' );
 };
 
+subtest "Underline" => sub {
+	$parser = $CLASS->new(pml => 'With __underline__ in middle');
+	my @tokens = $parser->get_all_tokens;
+	is( get_tokens_string(\@tokens), 'STRING,UNDERLINE,STRING,UNDERLINE,STRING', 'Underline in string' );
+
+	$parser = $CLASS->new(pml => '__underline__ at start');
+	my @tokens = $parser->get_all_tokens;
+	is( get_tokens_string(\@tokens), 'UNDERLINE,STRING,UNDERLINE,STRING', 'Underline at start' );
+
+	$parser = $CLASS->new(pml => 'At the end is __underline__');
+	my @tokens = $parser->get_all_tokens;
+	is( get_tokens_string(\@tokens), 'STRING,UNDERLINE,STRING,UNDERLINE', 'Underline at end' );
+};
+
+subtest "Del" => sub {
+	$parser = $CLASS->new(pml => 'With --del-- in middle');
+	my @tokens = $parser->get_all_tokens;
+	is( get_tokens_string(\@tokens), 'STRING,DEL,STRING,DEL,STRING', 'Del in string' );
+
+	$parser = $CLASS->new(pml => '--del-- at start');
+	my @tokens = $parser->get_all_tokens;
+	is( get_tokens_string(\@tokens), 'DEL,STRING,DEL,STRING', 'Del at start' );
+
+	$parser = $CLASS->new(pml => 'At the end is --del--');
+	my @tokens = $parser->get_all_tokens;
+	is( get_tokens_string(\@tokens), 'STRING,DEL,STRING,DEL', 'Del at end' );
+};
 
 done_testing();
 
