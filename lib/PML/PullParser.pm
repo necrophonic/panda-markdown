@@ -22,6 +22,8 @@ has 'state'					=> (is=>'rw');
 
 has 'token' => (is=>'rw'); # Output token
 
+has 'data_context' 	=> (is=>'rw');
+
 
 my $SYM_STRONG		= '*';
 my $SYM_EMPHASIS	= '/';
@@ -40,6 +42,8 @@ my $SYM_NEWLINE			= "\n";
 my $SYM_SECTION_BREAK	= '~';
 my $SYM_HEADER 			= '#';
 
+my $SYM_ROW		= '=';
+my $SYM_COLUMN	= '|';
 
 
 # ------------------------------------------------------------------------------
@@ -59,16 +63,37 @@ sub BUILD {
 
 	$self->pointer(0);
 	$self->state('newline');
+	$self->data_context('data');
 
 	return;
 }
 
-# ------------------------------------------------------------------------------
+# ============================================================== PUBLIC API ====
 
 sub get_next_token {
 	my ($self) = @_;
 
 	return 0 if $self->has_finished_parsing;
+	return $self->_get_next_token;
+}
+
+# ------------------------------------------------------------------------------
+
+sub get_all_tokens {
+	my ($self) = @_;	
+
+	# Not finished parsing yet (or started at all) so get_next_token until 
+	# we run out of document! Otherwise we just return what we have.
+	unless ($self->has_finished_parsing) {
+		while ($self->get_next_token) {}		
+	}
+	return wantarray ? @{$self->tokens} : $self->tokens;	
+}
+
+# ================================================================ INTERNAL ====
+
+sub _get_next_token {
+	my ($self) = @_;
 
 	while(!$self->token) {
 		my $state = $self->state;
@@ -79,6 +104,8 @@ sub get_next_token {
 		TRACE "  Read char [ ".($char||'EOF')." ]";
 
 		if ($state eq 'data') {
+
+			$self->data_context('data');
 
 			if ($char eq $SYM_STRONG)   { $self->_switch_state('strong');    next; }
 			if ($char eq $SYM_EMPHASIS) { $self->_switch_state('emphasis');  next; }
@@ -119,7 +146,7 @@ sub get_next_token {
 
 			if ($char eq $SYM_STRONG) {		
 				$self->_create_token({type=>'STRONG'});
-				$self->_switch_state('data');				
+				$self->_switch_to_data_state;
 				next;
 			}
 
@@ -134,7 +161,7 @@ sub get_next_token {
 			# and switch to data state.
 			$self->_append_to_string_token( $SYM_STRONG );
 			$self->_decrement_pointer;
-			$self->_switch_state('data');
+			$self->_switch_to_data_state;
 			next;
 		}
 
@@ -144,7 +171,7 @@ sub get_next_token {
 
 			if ($char eq $SYM_EMPHASIS) {		
 				$self->_create_token({type=>'EMPHASIS'});
-				$self->_switch_state('data');				
+				$self->_switch_to_data_state;
 				next;
 			}
 
@@ -159,7 +186,7 @@ sub get_next_token {
 			# and switch to data state.
 			$self->_append_to_string_token( $SYM_EMPHASIS );
 			$self->_decrement_pointer;
-			$self->_switch_state('data');
+			$self->_switch_to_data_state;
 			next;
 		}
 
@@ -169,7 +196,7 @@ sub get_next_token {
 
 			if ($char eq $SYM_UNDERLINE) {		
 				$self->_create_token({type=>'UNDERLINE'});
-				$self->_switch_state('data');				
+				$self->_switch_to_data_state;			
 				next;
 			}
 
@@ -184,7 +211,7 @@ sub get_next_token {
 			# and switch to data state.
 			$self->_append_to_string_token( $SYM_UNDERLINE );
 			$self->_decrement_pointer;
-			$self->_switch_state('data');
+			$self->_switch_to_data_state;
 			next;
 		}
 
@@ -194,7 +221,7 @@ sub get_next_token {
 
 			if ($char eq $SYM_DELETE) {		
 				$self->_create_token({type=>'DEL'});
-				$self->_switch_state('data');				
+				$self->_switch_to_data_state;
 				next;
 			}
 
@@ -209,7 +236,7 @@ sub get_next_token {
 			# and switch to data state.
 			$self->_append_to_string_token( $SYM_DELETE );
 			$self->_decrement_pointer;
-			$self->_switch_state('data');
+			$self->_switch_to_data_state;
 			next;
 		}
 
@@ -235,7 +262,7 @@ sub get_next_token {
 			# reconsume char and switch to data state.
 			$self->_append_to_string_token( $SYM_LINK_START );
 			$self->_decrement_pointer;
-			$self->_switch_state('data');
+			$self->_switch_to_data_state;
 			next;
 		}
 
@@ -290,7 +317,7 @@ sub get_next_token {
 		if ($state eq 'link-end') {
 
 			if ($char eq $SYM_LINK_END) {
-				$self->_switch_state('data');
+				$self->_switch_to_data_state;
 				next;
 			}
 
@@ -332,7 +359,7 @@ sub get_next_token {
 			# reconsume char and switch to data state.
 			$self->_append_to_string_token( $SYM_IMAGE_START );
 			$self->_decrement_pointer;
-			$self->_switch_state('data');
+			$self->_switch_to_data_state;
 			next;
 		}
 
@@ -391,7 +418,7 @@ sub get_next_token {
 		if ($state eq 'image-end') {
 
 			if ($char eq $SYM_IMAGE_END) {
-				$self->_switch_state('data');
+				$self->_switch_to_data_state;
 				next;
 			}
 
@@ -430,8 +457,13 @@ sub get_next_token {
 				next;
 			}
 
+			if ($char eq $SYM_ROW) {
+				$self->_switch_state('row');				
+				next;
+			}
+
 			# Anything else
-			$self->_switch_state('data');
+			$self->_switch_to_data_state;
 			$self->_decrement_pointer;
 			next;
 		}
@@ -442,7 +474,7 @@ sub get_next_token {
 
 			if ($char eq $SYM_SECTION_BREAK) {
 				$self->_create_token({type=>'SECTIONBREAK'});
-				$self->_switch_state('data');
+				$self->_switch_to_data_state;
 				next;
 			}
 
@@ -455,7 +487,7 @@ sub get_next_token {
 			# Anything else
 			$self->_append_to_string_token( $SYM_SECTION_BREAK );
 			$self->_decrement_pointer;
-			$self->_switch_state('data');
+			$self->_switch_to_data_state;
 			next;
 		}
 
@@ -495,7 +527,7 @@ sub get_next_token {
 			}
 
 			if ($char eq $SYM_NEWLINE) {
-				$self->_switch_state('data');
+				$self->_switch_to_data_state;
 				next;
 			}
 
@@ -506,10 +538,164 @@ sub get_next_token {
 
 		# ---------------------------------------
 
+		if ($state eq 'row') {
+
+			if ($char eq $SYM_ROW) {
+				$self->_discard_token; # Discard previous newline
+				$self->_create_token({type=>'ROW'});
+				$self->_switch_state('row-end-state');
+				next;
+			}
+
+			if ($char eq 'EOF') {
+				$self->_append_to_string_token( $SYM_ROW );
+				$self->_switch_state('end_of_data');
+				next;
+			}
+			
+			# Anything else
+			$self->_append_to_string_token( $SYM_ROW );
+			$self->_decrement_pointer;
+			$self->_switch_to_data_state;
+			next;
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'row-end-state') {
+
+			if ($char eq $SYM_NEWLINE) {
+				if ($self->data_context eq 'column-data') {
+					$self->_switch_state('data');
+				}
+				else {
+					$self->data_context('row-data');
+					$self->_switch_state('row-data-state');
+				}
+				next;
+			}
+
+			if ($char eq 'EOF') {
+				if ($self->data_context eq 'column-data') {
+					# Oops expecting a newline. We'll be nice though and
+					# close the sequence as if it were there.				
+				}
+				else {
+					$self->_discard_token;
+					$self->_create_token({type=>'STRING',content=>"$SYM_ROW$SYM_ROW"});					
+				}
+				$self->_switch_state('end_of_data');
+				next;
+			}
+
+			# Anything else
+			$self->_discard_token;
+			$self->_create_token({type=>'STRING',content=>"$SYM_ROW$SYM_ROW"});
+			$self->_switch_to_data_state;
+			next;
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'row-data-state') {
+			
+			if ($char eq $SYM_COLUMN) {
+				$self->_switch_state('first-column');
+				next;
+			}
+
+			# Anything else
+			$self->_raise_parse_error('Unexpected char at start of row data');
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'first-column') {
+
+			if ($char eq $SYM_COLUMN) {				
+				$self->data_context('column-data');
+				$self->_create_token({type=>'COLUMN'});
+				$self->_switch_state('column-data');
+				next;
+			}
+
+			# Anything else
+			$self->_raise_parse_error('Unexpected end of data in first column tag');
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'column') {
+
+			if ($char eq $SYM_COLUMN) {
+				$self->_discard_token if $self->temporary_token->{type} eq 'NEWLINE'; # Discard previous newline
+				$self->data_context('column-data');
+				$self->_create_token({type=>'COLUMN'});
+				$self->_switch_state('column-data');
+				next;
+			}
+
+			if ($char eq 'EOF') {
+				$self->_raise_parse_error('Unexpected end of data in column tag');
+			}
+
+			# Anything else
+			$self->_append_to_string_token($SYM_COLUMN);
+			$self->_decrement_pointer;
+			$self->_switch_state('column-data');
+			next;
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'column-data') {
+
+			if ($char eq $SYM_COLUMN) {
+				$self->_switch_state('column');
+				next;
+			}
+
+			if ($char eq $SYM_STRONG)   { $self->_switch_state('strong');    next; }
+			if ($char eq $SYM_EMPHASIS) { $self->_switch_state('emphasis');  next; }
+			if ($char eq $SYM_UNDERLINE){ $self->_switch_state('underline'); next; }
+			if ($char eq $SYM_DELETE)	{ $self->_switch_state('delete');	 next; }
+
+			if ($char eq $SYM_LINK_START) {
+				$self->_switch_state('link-start');
+				next;
+			}
+
+			if ($char eq $SYM_IMAGE_START) {
+				$self->_switch_state('image-start');
+				next;
+			}
+
+			if ($char eq $SYM_NEWLINE) {
+				$self->_create_token({type=>'NEWLINE'});
+				$self->_switch_state('newline');
+				next;
+			}
+
+			if ($char eq 'EOF') {
+				$self->_raise_parse_error('Unexpected end of data in column data');
+			}
+
+			# Anything else
+			$self->_append_to_string_token($char);
+			next;
+		}
+
+		# ---------------------------------------
+
 		if ($state eq 'end_of_data') {
 			DEBUG "End of data reached - finish parse";
 			$self->has_finished_parsing(1);
 			$self->_emit_token;
+
+			if ($self->temporary_token) {
+				TRACE "Still got temp token!";
+			}
+
 			last;
 		}
 
@@ -525,19 +711,6 @@ sub get_next_token {
 	$self->token(undef);
 
 	return $token;
-}
-
-# ------------------------------------------------------------------------------
-
-sub get_all_tokens {
-	my ($self) = @_;	
-
-	# Not finished parsing yet (or started at all) so get_next_token until 
-	# we run out of document! Otherwise we just return what we have.
-	unless ($self->has_finished_parsing) {
-		while ($self->get_next_token) {}		
-	}
-	return wantarray ? @{$self->tokens} : $self->tokens;	
 }
 
 # ------------------------------------------------------------------------------
@@ -570,6 +743,13 @@ sub _raise_parse_error {
 	my ($self, $msg) = @_;
 	ERROR "!!Parse error [$msg]";
 	die "Encountered parse error [$msg]\n\n";
+}
+
+# ------------------------------------------------------------------------------
+
+sub _switch_to_data_state {
+	my ($self) = @_;
+	$self->_switch_state( $self->data_context );
 }
 
 # ------------------------------------------------------------------------------
