@@ -97,11 +97,14 @@ sub _get_next_token {
 
 	while(!$self->token) {
 		my $state = $self->state;
-		my $char = $self->pml_chars->[$self->pointer] || 'EOF';
+		my $char = $self->pml_chars->[$self->pointer];
 
 		$self->_increment_pointer;
 		TRACE "State is '$state'";
-		TRACE "  Read char [ ".($char||'EOF')." ]";
+		
+		$char = 'EOF' unless defined $char;
+
+		TRACE "  Read char [$char]";
 
 		if ($state eq 'data') {
 
