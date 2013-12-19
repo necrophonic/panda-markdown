@@ -5,11 +5,11 @@ use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
-Log::Log4perl->easy_init($TRACE);
+Log::Log4perl->easy_init($OFF);
 
 use Moo;
 use PML::PullParser;
-
+use HTML::Escape qw/escape_html/;
 
 
 my %tags = (
@@ -89,7 +89,7 @@ sub format {
 
 		if ($type eq 'STRING') {
 			$html .= $self->_open_paragraph unless $self->is_paragraph_open;
-			$html .= $token->{content};
+			$html .= escape_html($token->{content});
 			next;
 		}
 
