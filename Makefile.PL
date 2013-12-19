@@ -19,7 +19,7 @@ WriteMakefile(
 		'HTML::Escape' 	   => '1.08',
 		'Log::Log4perl'	   => '1.42',
 	},
-	TEST_REQUIRES => {
+	BUILD_REQUIRES => {
 		"Test::More" 	  => '0.99',
 		"Test::Exception" => '0.32'
 	},
