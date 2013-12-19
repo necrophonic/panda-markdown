@@ -273,8 +273,12 @@ sub _get_next_token {
 
 		if ($state eq 'link-href') {
 
-			if ($char eq $SYM_LINK_CONTEXT_SWITCH) { $self->_switch_state('link-text'); next }
-			if ($char eq $SYM_LINK_END) 		   { $self->_switch_state('link-end');  next }
+			if ($char eq $SYM_LINK_CONTEXT_SWITCH) {
+				$self->temporary_token_context('text');
+				$self->_switch_state('link-text');
+				next;
+			}
+			if ($char eq $SYM_LINK_END) { $self->_switch_state('link-end');  next }
 			
 			if ($char eq 'EOF') {
 				$self->_raise_parse_error("Unexpected 'EOF' while parsing link href");
@@ -371,11 +375,7 @@ sub _get_next_token {
 		if ($state eq 'image-src') {
 
 			if ($char eq $SYM_IMAGE_CONTEXT_SWITCH) { $self->_switch_state('image-options'); next }
-			
-			if ($char eq $SYM_IMAGE_END) {
-				$self->_switch_state('image-end');
-				next;
-			}
+			if ($char eq $SYM_IMAGE_END) 			{ $self->_switch_state('image-end');	 next }
 			
 			if ($char eq 'EOF') {
 				$self->_raise_parse_error("Unexpected 'EOF' while parsing image src");
