@@ -3,7 +3,7 @@ Panda Markdown Language [![Build Status](https://travis-ci.org/necrophonic/panda
 
 A markdown type language and processor for blog postings.
 
-**Version 0.8**
+**Version 0.9**
 
 
 See the wiki for work in progress spec: [PML Wiki](https://github.com/necrophonic/panda-markdown/wiki)
