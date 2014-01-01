@@ -27,9 +27,14 @@ my %tags = (
 );
 
 
-has 'tag_stack'			=> (is=>'rw',default=>sub{[]});
-has 'is_paragraph_open'	=> (is=>'rw');
-has 'num_breaks'		=> (is=>'rw');
+has 'tag_stack'				=> (is=>'rw',default=>sub{[]});
+has 'is_paragraph_open'		=> (is=>'rw');
+has 'num_breaks'			=> (is=>'rw');
+
+has 'is_in_row'				=> (is=>'rw');
+has 'is_in_column'			=> (is=>'rw');
+has 'row_has_num_columns'	=> (is=>'rw');
+has 'row_columns'			=> (is=>'rw');
 
 sub format {
 	my ($self, $pml) = @_;
@@ -37,11 +42,17 @@ sub format {
 	my $parser = PML::PullParser->new(pml => $pml);
 
 	my @tokens = $parser->get_all_tokens;
-	my $html   = '';
+	
+	my $output_html 	= '';
+	my $cur_column_html = '';
+	my $html   			= \$output_html;
 
 	$self->num_breaks(0);
 
 	$self->is_paragraph_open(0);
+	$self->is_in_row(0);
+	$self->row_has_num_columns(-1);
+	$self->row_columns([]);	
 		
 	foreach my $token (@tokens) {
 
@@ -52,24 +63,74 @@ sub format {
 			# (see the else). If there's only one then you get a BR, otherwise you
 			# get a paragraph.
 			$self->num_breaks( $self->num_breaks+1 );
-
-
-			TRACE "Increment breaks to ".$self->num_breaks;
+			next;			
 		}
 		else {
 			if ($self->num_breaks == 1) {
-				$html .= '<br>';				
+				$$html .= '<br>';				
 			}
 			elsif ($self->num_breaks > 1) {
-				$html .= $self->_close_paragraph if $self->is_paragraph_open;
-				$html .= $self->_open_paragraph;
+				$$html .= $self->_close_paragraph if $self->is_paragraph_open;
+				$$html .= $self->_open_paragraph;
 			}
 			$self->num_breaks(0);
 		}
 
+		if ($type eq 'ROW') {			
+			if ($self->is_in_row) {
+				# Finalise row
+
+				if ($self->is_in_column) {
+					$cur_column_html .= $self->_close_paragraph if $self->is_paragraph_open;					
+					# Already in a column, so output it to the column store				
+					push @{$self->row_columns}, $cur_column_html;
+					$cur_column_html = '';	
+				}
+
+				$html = \$output_html;
+
+				my $num_columns = $self->_num_columns_in_cur_row;
+
+				$$html .= '<div class="clearfix col-'.$num_columns.'">';
+
+				foreach my $column (@{$self->row_columns}) {
+					$$html .= '<div class="column">' . $column . '</div>';					
+				}
+
+				$$html .= '</div>'; # End of row
+
+				# Reset the columns when we close out the row rather than
+				# when starting so that you can always query "num columns"
+				# and it will be right in context for wherever the parsing is.
+				$self->row_columns([]);
+				$self->is_in_column(0);
+				$self->is_in_row(0);
+				
+			}
+			else {				
+				$self->is_in_row(1);
+			}
+			next;
+		}
+
+		if ($type eq 'COLUMN') {			
+			# TODO error if not in row!			
+			$html = \$cur_column_html;		
+
+			if ($self->is_in_column) {
+				$cur_column_html .= $self->_close_paragraph if $self->is_paragraph_open;				
+				# Already in a column, so output it to the column store				
+				push @{$self->row_columns}, $cur_column_html;
+				$cur_column_html = '';	
+			}
+						
+			$self->is_in_column(1);
+			$self->row_has_num_columns( $self->row_has_num_columns+1 );			
+		}
+
 		if ($type =~ /^(STRONG|EMPHASIS|UNDERLINE|DEL)$/o) {
 			TRACE "Type [$1]";			
-			$html .= $self->_match_tag($1);
+			$$html .= $self->_match_tag($1);
 			next;
 		}
 
@@ -77,7 +138,7 @@ sub format {
 			# TODO - target
 			my $href = $token->{href};
 			my $text = $token->{text} || $token->{href};
-			$html .= qq|<a href="$href" target="_new">$text</a>|;
+			$$html .= qq|<a href="$href" target="_new">$text</a>|;
 			next;
 		}
 
@@ -101,18 +162,18 @@ sub format {
 				if ($option =~ /^W(.+)$/) { $width  = qq| width="$1px"|  }
 			}
 			
-			$html .= '<img src="'.$token->{src}.'"'.$align.$width.$height.'>';
+			$$html .= '<img src="'.$token->{src}.'"'.$align.$width.$height.'>';
 			next;
 		}
 
 		if ($type eq 'HEADER') {
-			$html .= "\n<h".$token->{level}.'>'.$token->{text}.'</h'.$token->{level}.">\n";
+			$$html .= "\n<h".$token->{level}.'>'.$token->{text}.'</h'.$token->{level}.">\n";
 			next;
 		}
 
 		if ($type eq 'STRING') {
-			$html .= $self->_open_paragraph unless $self->is_paragraph_open;
-			$html .= escape_html($token->{content});
+			$$html .= $self->_open_paragraph unless $self->is_paragraph_open;
+			$$html .= escape_html($token->{content});
 			next;
 		}
 
@@ -124,9 +185,16 @@ sub format {
 	}
 
 	# If there's a paragraph open, close it!
-	$html .= $tags{PARAGRAPH_CLOSE} if $self->is_paragraph_open;
+	$output_html .= $tags{PARAGRAPH_CLOSE} if $self->is_paragraph_open;
 
-	return $html;
+	return $output_html;
+}
+
+# ------------------------------------------------------------------------------
+
+sub _num_columns_in_cur_row {
+	my ($self) = @_;
+	return scalar @{$self->row_columns};
 }
 
 # ------------------------------------------------------------------------------

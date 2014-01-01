@@ -2,11 +2,12 @@
 
 use strict;
 use Test::More;
+use Test::Exception;
 
 use_ok 'PML::HTMLFormatter';
 
 use Log::Log4perl qw(:easy);
-Log::Log4perl->easy_init($OFF);
+Log::Log4perl->easy_init($INFO);
 
 	can_ok('PML::HTMLFormatter',qw|format _match_tag|);
 
@@ -15,6 +16,7 @@ Log::Log4perl->easy_init($OFF);
 	test_links();
 	test_images();
 	test_breaks();
+	test_rows_and_columns();
 #	test_full_doc_1();
 
 	# TESTS TO DO
@@ -124,6 +126,52 @@ sub test_breaks {
 			is $parser->format("A paragraph\n\n\n\n\nThen another after 5 breaks"),
 			   '<p>A paragraph</p><p>Then another after 5 breaks</p>',
 			   'one paragraph then another after 5 breaks';
+		};
+
+	};
+}
+
+# ------------------------------------------------------------------------------
+
+sub test_rows_and_columns {
+	subtest "Test rows and columns" => sub {
+
+		my $parser = PML::HTMLFormatter->new;
+
+		subtest "Simple rows and columns" => sub {
+			is $parser->format(qq!==\n||One column\n||Another column\n==!),
+			   '<div class="clearfix col-2"><div class="column"><p>One column</p></div><div class="column"><p>Another column</p></div></div>',
+			   'two column row';
+
+			is $parser->format(qq!==\n||One column\n||Another column\n||And another\n==!),
+			   '<div class="clearfix col-3"><div class="column"><p>One column</p></div><div class="column"><p>Another column</p></div><div class="column"><p>And another</p></div></div>',
+			   'three column row';
+		};
+
+		subtest "Error states" => sub {
+			throws_ok {$parser->format(qq!==\nOops!)}
+			          qr/Unexpected char at start of row data/,
+			          'parse error thrown with bad column start';
+
+			throws_ok {$parser->format(qq!==\n|Almost!)}
+					  qr/Unexpected char in first column tag/,
+   					  'parse error thrown with bad column start (bad sequence)';
+
+			throws_ok {$parser->format(qq!==\n||abc\n|!)}
+					  qr/Unexpected end of data in column tag/,
+					  'parse error thrown with bad column start (unexpected eof)';
+
+			throws_ok {$parser->format(qq!==\n||abc\n||end early!)}
+					  qr/Unexpected end of data in column data/,
+					  'parse error thrown with unexpected eof';
+
+		};
+
+		subtest "Incomplete sequence" => sub {
+			is $parser->format(qq!==Not a row!),
+			   '<p>==Not a row</p>',
+			   'plain char sequence';
+
 		};
 
 	};
