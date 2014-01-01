@@ -8,7 +8,7 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
 	NAME		=> 'Panda_Markdown',
-	VERSION		=> '0.9',
+	VERSION		=> '0.10',
 	ABSTRACT	=> 'Panda blog orientated markdown',
 	AUTHOR		=> 'J Gregory <john@johngregory.me.uk>',
 	LICENSE		=> 'artistic_2',
