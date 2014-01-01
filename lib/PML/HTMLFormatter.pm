@@ -27,8 +27,9 @@ my %tags = (
 );
 
 
-has 'tag_stack' => (is=>'rw',default=>sub{[]});
+has 'tag_stack'			=> (is=>'rw',default=>sub{[]});
 has 'is_paragraph_open'	=> (is=>'rw');
+has 'num_breaks'		=> (is=>'rw');
 
 sub format {
 	my ($self, $pml) = @_;
@@ -38,11 +39,33 @@ sub format {
 	my @tokens = $parser->get_all_tokens;
 	my $html   = '';
 
+	$self->num_breaks(0);
+
 	$self->is_paragraph_open(0);
 		
 	foreach my $token (@tokens) {
 
 		my $type = $token->{type};
+
+		if ($type eq 'NEWLINE') {
+			# Start storing breaks. We output as soon as we get something different
+			# (see the else). If there's only one then you get a BR, otherwise you
+			# get a paragraph.
+			$self->num_breaks( $self->num_breaks+1 );
+
+
+			TRACE "Increment breaks to ".$self->num_breaks;
+		}
+		else {
+			if ($self->num_breaks == 1) {
+				$html .= '<br>';				
+			}
+			elsif ($self->num_breaks > 1) {
+				$html .= $self->_close_paragraph if $self->is_paragraph_open;
+				$html .= $self->_open_paragraph;
+			}
+			$self->num_breaks(0);
+		}
 
 		if ($type =~ /^(STRONG|EMPHASIS|UNDERLINE|DEL)$/o) {
 			TRACE "Type [$1]";			
@@ -92,6 +115,8 @@ sub format {
 			$html .= escape_html($token->{content});
 			next;
 		}
+
+
 
 		# Shouldn't get here!
 		# TODO error

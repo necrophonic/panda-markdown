@@ -14,6 +14,7 @@ Log::Log4perl->easy_init($OFF);
 	test_headers();
 	test_links();
 	test_images();
+	test_breaks();
 #	test_full_doc_1();
 
 	# TESTS TO DO
@@ -95,6 +96,36 @@ sub test_images {
 		is($parser->format('{{i.jpg|<<,W10,H11}}'),
 			'<img src="i.jpg" class="pulled-left" width="10px" height="11px">',
 			'All options');
+	};
+}
+
+# ------------------------------------------------------------------------------
+
+sub test_breaks {
+	subtest "Test breaks" => sub {
+
+		my $parser = PML::HTMLFormatter->new;
+		
+		subtest "Simple single breaks" => sub {
+			is $parser->format("Something\nbroken\ntwice"),
+			   '<p>Something<br>broken<br>twice</p>',
+			   'one line broken twice';
+		};
+
+		subtest "Paragraph breaks" => sub {
+			is $parser->format("A paragraph\n\nThen another"),
+			   '<p>A paragraph</p><p>Then another</p>',
+			   'one paragraph then another';
+
+			is $parser->format("A paragraph\n\n\n\nThen another after 4 breaks"),
+			   '<p>A paragraph</p><p>Then another after 4 breaks</p>',
+			   'one paragraph then another after 4 breaks';
+
+			is $parser->format("A paragraph\n\n\n\n\nThen another after 5 breaks"),
+			   '<p>A paragraph</p><p>Then another after 5 breaks</p>',
+			   'one paragraph then another after 5 breaks';
+		};
+
 	};
 }
 
