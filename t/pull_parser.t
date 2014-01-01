@@ -126,6 +126,32 @@ subtest "Internal methods" => sub {
 		is($parser->temporary_token_context,undef, 'Token context discarded');
 	};
 
+	# -------------------------------------------
+
+	subtest "data context" => sub {
+		$parser->data_context([]);
+
+		is $parser->_get_data_context, 'data', 'default context is "data"';
+
+		$parser->_push_data_context('context1');
+		$parser->_push_data_context('context2');
+		is $parser->_get_data_context, 'context2', 'context set as expected';
+
+		$parser->_pop_data_context;
+		is $parser->_get_data_context, 'context1', 'context set as expected';
+
+		$parser->_pop_data_context;		
+		is $parser->_get_data_context, 'data', 'back to "data"';
+
+		$parser->_pop_data_context;
+		is $parser->_get_data_context, 'data', 'pop on empty is still "data"';
+
+		$parser->_push_data_context('context1');
+		$parser->_push_data_context('context2');
+		$parser->_clear_data_context;
+		is $parser->_get_data_context, 'data', 'context is "data" after clear';
+	};
+
 };
 
 

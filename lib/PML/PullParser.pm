@@ -47,6 +47,11 @@ my $SYM_HEADER 			= '#';
 my $SYM_ROW		= '=';
 my $SYM_COLUMN	= '|';
 
+my $SYM_QUOTE				 = '"';
+my $SYM_QUOTE_CONTEXT_SWITCH = '|';
+
+my $SYM_ESCAPE	= "\\";
+
 
 # ------------------------------------------------------------------------------
 
@@ -65,7 +70,9 @@ sub BUILD {
 
 	$self->pointer(0);
 	$self->state('newline');
-	$self->data_context('data');
+
+	$self->data_context([]);
+	#$self->data_context('data');
 
 	return;
 }
@@ -110,12 +117,17 @@ sub _get_next_token {
 
 		if ($state eq 'data') {
 
-			$self->data_context('data');
+			#$self->data_context('data'); # REMOVE
 
 			if ($char eq $SYM_STRONG)   { $self->_switch_state('strong');    next; }
 			if ($char eq $SYM_EMPHASIS) { $self->_switch_state('emphasis');  next; }
 			if ($char eq $SYM_UNDERLINE){ $self->_switch_state('underline'); next; }
 			if ($char eq $SYM_DELETE)	{ $self->_switch_state('delete');	 next; }
+
+			if ($char eq $SYM_QUOTE) {
+				$self->_switch_state('quote-start');
+				next;
+			}
 
 			if ($char eq $SYM_LINK_START) {
 				$self->_switch_state('link-start');
@@ -570,22 +582,23 @@ sub _get_next_token {
 		if ($state eq 'row-end-state') {
 
 			if ($char eq $SYM_NEWLINE) {
-				if ($self->data_context eq 'column-data') {	
+				if ($self->_get_data_context eq 'column-data') {	
 					TRACE "  -> Data context is 'column-data'";
 					$self->_emit_token;
-					$self->data_context('data');
+					$self->_pop_data_context;
+					$self->_pop_data_context; # Pop two levels (column then row)
 					$self->_switch_state('newline');
 				}
 				else {
 					TRACE "  -> Data context other than 'column-data'";
-					$self->data_context('row-data');
+					$self->_push_data_context('row-data');
 					$self->_switch_state('row-data-state');
 				}
 				next;
 			}
 
 			if ($char eq 'EOF') {
-				if ($self->data_context eq 'column-data') {
+				if ($self->_get_data_context eq 'column-data') {
 					# Oops expecting a newline. We'll be nice though and
 					# close the sequence as if it were there.				
 				}
@@ -623,7 +636,7 @@ sub _get_next_token {
 		if ($state eq 'first-column') {
 
 			if ($char eq $SYM_COLUMN) {				
-				$self->data_context('column-data');
+				$self->_push_data_context('column-data');
 				$self->_create_token({type=>'COLUMN'});
 				$self->_switch_state('column-data');
 				next;
@@ -639,7 +652,7 @@ sub _get_next_token {
 
 			if ($char eq $SYM_COLUMN) {
 				$self->_discard_token if $self->temporary_token->{type} eq 'NEWLINE'; # Discard previous newline
-				$self->data_context('column-data');
+				$self->_push_data_context('column-data');
 				$self->_create_token({type=>'COLUMN'});
 				$self->_switch_state('column-data');
 				next;
@@ -669,6 +682,11 @@ sub _get_next_token {
 			if ($char eq $SYM_EMPHASIS) { $self->_switch_state('emphasis');  next; }
 			if ($char eq $SYM_UNDERLINE){ $self->_switch_state('underline'); next; }
 			if ($char eq $SYM_DELETE)	{ $self->_switch_state('delete');	 next; }
+
+			if ($char eq $SYM_QUOTE) {
+				$self->_switch_state('quote-start');
+				next;
+			}
 
 			if ($char eq $SYM_LINK_START) {
 				$self->_switch_state('link-start');
@@ -711,8 +729,96 @@ sub _get_next_token {
 
 		# ---------------------------------------
 
+		if ($state eq 'quote-start') {
+			if ($char eq $SYM_QUOTE) {
+				$self->_create_token({type=>'QUOTE',body=>'',cite=>''});
+				$self->temporary_token_context('body');
+				$self->_switch_state('quote-body');
+				$self->_push_data_context('quote-body');
+				next;
+			}
+
+			if ($char eq 'EOF') {
+				$self->_append_to_string_token('"');
+				$self->_switch_state('end_of_data');
+				next;
+			}
+
+			# Anything else
+			$self->_append_to_string_token('"');
+			$self->_decrement_pointer;
+			$self->_switch_to_data_state;
+			next;
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'quote-end') {
+			if ($char eq $SYM_QUOTE) {
+				$self->_pop_data_context;
+				$self->_switch_to_data_state;
+				next;
+			}
+
+			if ($char eq 'EOF') {
+				$self->_raise_parse_error("unexpected end of file in quote end sequence");
+			}
+
+			# Anything else			
+			my $context = $self->temporary_token_context;
+			
+			if ($context =~ /^(?:body|cite)$/o) {
+				$self->temporary_token->{$context} .= $char;
+				next;
+			}
+
+			$self->_raise_parse_error("Missing or bad quote token context");
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'quote-body') {
+			if ($char eq 'EOF') {
+				$self->_raise_parse_error('unexpected end of file in quote');
+			}
+
+			if ($char eq $SYM_QUOTE_CONTEXT_SWITCH) {
+				$self->temporary_token_context('cite');
+				$self->_switch_state('quote-cite');
+				next;
+			}
+
+			if ($char eq $SYM_QUOTE) {
+				$self->_switch_state('quote-end');
+				next;
+			}
+
+			# Anything else
+			$self->temporary_token->{body} .= $char;
+			next;
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'quote-cite') {
+			if ($char eq 'EOF') {
+				$self->_raise_parse_error('unexpected end of file in quote');
+			}
+
+			if ($char eq $SYM_QUOTE) {
+				$self->_switch_state('quote-end');
+				next;
+			}
+
+			# Anything else
+			$self->temporary_token->{cite} .= $char;
+			next;
+		}
+
+		# ---------------------------------------
+
 		# Shouldn't ever get here!
-		$self->_raise_parse_error("Invalid state!");
+		$self->_raise_parse_error("Invalid state! '$state'");
 
 	}
 
@@ -759,7 +865,7 @@ sub _raise_parse_error {
 
 sub _switch_to_data_state {
 	my ($self) = @_;
-	$self->_switch_state( $self->data_context );
+	$self->_switch_state( $self->_get_data_context );
 }
 
 # ------------------------------------------------------------------------------
@@ -779,6 +885,24 @@ sub _discard_token {
 	$self->temporary_token_context(undef);
 	return;
 }
+
+# ------------------------------------------------------------------------------
+
+sub _push_data_context {
+	my ($self, $context) = @_;
+	TRACE "Stack data context '$context'";
+	unshift @{$self->data_context}, $context
+}
+
+sub _pop_data_context {
+	my ($self) = @_;
+	shift @{$self->data_context};
+	TRACE "Popped data context stack back to '".$self->_get_data_context."'";
+}
+
+sub _clear_data_context { $_[0]->data_context([]) };
+
+sub _get_data_context  { $_[0]->data_context->[0] || 'data'    }
 
 # ------------------------------------------------------------------------------
 

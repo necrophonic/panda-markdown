@@ -28,6 +28,7 @@ my $parser;
 	test_header_markup();
 	test_section_break_markup();
 	test_row_and_column_markup();
+	test_quote_markup();
 
 
 done_testing();
@@ -296,6 +297,55 @@ sub test_row_and_column_markup {
 					'Column with image markup'
 				);
 		};
+	};
+}
+
+# ------------------------------------------------------------------------------
+
+sub test_quote_markup {
+	subtest "Test quote markup" => sub {
+
+		my @tokens = ();
+
+		subtest "Simple quotes" => sub {
+
+			subtest "Simple quote - no cite" => sub {
+				$parser = $CLASS->new(pml => '""A wise man once said""');
+				@tokens = $parser->get_all_tokens;
+				is get_tokens_string(\@tokens), 'QUOTE', 'got quote token';
+				is $tokens[0]->{body}, 'A wise man once said', 'body ok';
+				is $tokens[0]->{cite}, '', 'no cite as expected';
+			};
+
+			subtest "Simple quote - with cite" => sub {
+				$parser = $CLASS->new(pml => '""A wise man once said|Some guy""');
+				@tokens = $parser->get_all_tokens;
+				is get_tokens_string(\@tokens), 'QUOTE', 'got quote token';
+				is $tokens[0]->{body}, 'A wise man once said', 'body ok';
+				is $tokens[0]->{cite}, 'Some guy', 'cite as expected';
+			};
+
+		};
+
+		subtest "Quotes nested in other blocks" => sub {
+
+			subtest "Root level" => sub {
+				$parser = $CLASS->new(pml => 'This is true: ""A wise man once said"" Is it not?');
+				@tokens = $parser->get_all_tokens;
+				is get_tokens_string(\@tokens), 'STRING,QUOTE,STRING', 'got quote token with strings';
+				is $tokens[1]->{body}, 'A wise man once said', 'body ok';
+				is $tokens[1]->{cite}, '', 'no cite as expected';
+			};
+
+			subtest "In a column" => sub {
+				$parser = $CLASS->new(pml => qq!==\n||""A wise man once said""\n==!);
+				@tokens = $parser->get_all_tokens;
+				is get_tokens_string(\@tokens), 'ROW,COLUMN,QUOTE,ROW', 'got quote token with strings';
+				is $tokens[2]->{body}, 'A wise man once said', 'body ok';
+				is $tokens[2]->{cite}, '', 'no cite as expected';
+			};
+		};
+
 	};
 }
 
