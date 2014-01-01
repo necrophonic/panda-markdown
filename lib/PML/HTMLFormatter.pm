@@ -66,12 +66,15 @@ sub format {
 			next;			
 		}
 		else {
-			if ($self->num_breaks == 1) {
-				$$html .= '<br>';				
-			}
-			elsif ($self->num_breaks > 1) {
-				$$html .= $self->_close_paragraph if $self->is_paragraph_open;
-				$$html .= $self->_open_paragraph;
+			unless ($type eq 'HEADER') {
+
+				if ($self->num_breaks == 1) {
+					$$html .= '<br>';
+				}
+				elsif ($self->num_breaks > 1) {
+					$$html .= $self->_close_paragraph if $self->is_paragraph_open;
+					$$html .= $self->_open_paragraph;
+				}
 			}
 			$self->num_breaks(0);
 		}
@@ -91,13 +94,15 @@ sub format {
 
 				my $num_columns = $self->_num_columns_in_cur_row;
 
-				$$html .= '<div class="clearfix col-'.$num_columns.'">';
+
+
+				$$html .= '<div class="clearfix col-'.$num_columns.'">'."\n";
 
 				foreach my $column (@{$self->row_columns}) {
-					$$html .= '<div class="column">' . $column . '</div>';					
+					$$html .= '<div class="column">' . "\n$column" . "</div>\n";					
 				}
 
-				$$html .= '</div>'; # End of row
+				$$html .= "</div>\n"; # End of row
 
 				# Reset the columns when we close out the row rather than
 				# when starting so that you can always query "num columns"
@@ -108,6 +113,7 @@ sub format {
 				
 			}
 			else {				
+				$$html .= $self->_close_paragraph if $self->is_paragraph_open;
 				$self->is_in_row(1);
 			}
 			next;
@@ -250,7 +256,7 @@ sub _close_paragraph {
 	die "Can't close paragraph - bad stack match" unless $self->tag_stack->[0] eq 'PARAGRAPH';
 	$self->_pop_stack;
 	$self->is_paragraph_open(0);
-	return $tags{PARAGRAPH_CLOSE};
+	return $tags{PARAGRAPH_CLOSE}."\n";
 }
 
 1;

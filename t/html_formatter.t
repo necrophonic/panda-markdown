@@ -7,7 +7,7 @@ use Test::Exception;
 use_ok 'PML::HTMLFormatter';
 
 use Log::Log4perl qw(:easy);
-Log::Log4perl->easy_init($INFO);
+Log::Log4perl->easy_init($OFF);
 
 	can_ok('PML::HTMLFormatter',qw|format _match_tag|);
 
@@ -17,7 +17,7 @@ Log::Log4perl->easy_init($INFO);
 	test_images();
 	test_breaks();
 	test_rows_and_columns();
-#	test_full_doc_1();
+	test_full_doc_1();
 
 	# TESTS TO DO
 	# .. html escape
@@ -116,15 +116,15 @@ sub test_breaks {
 
 		subtest "Paragraph breaks" => sub {
 			is $parser->format("A paragraph\n\nThen another"),
-			   '<p>A paragraph</p><p>Then another</p>',
+			   qq|<p>A paragraph</p>\n<p>Then another</p>|,
 			   'one paragraph then another';
 
 			is $parser->format("A paragraph\n\n\n\nThen another after 4 breaks"),
-			   '<p>A paragraph</p><p>Then another after 4 breaks</p>',
+			   qq|<p>A paragraph</p>\n<p>Then another after 4 breaks</p>|,
 			   'one paragraph then another after 4 breaks';
 
 			is $parser->format("A paragraph\n\n\n\n\nThen another after 5 breaks"),
-			   '<p>A paragraph</p><p>Then another after 5 breaks</p>',
+			   qq|<p>A paragraph</p>\n<p>Then another after 5 breaks</p>|,
 			   'one paragraph then another after 5 breaks';
 		};
 
@@ -140,12 +140,22 @@ sub test_rows_and_columns {
 
 		subtest "Simple rows and columns" => sub {
 			is $parser->format(qq!==\n||One column\n||Another column\n==!),
-			   '<div class="clearfix col-2"><div class="column"><p>One column</p></div><div class="column"><p>Another column</p></div></div>',
+			   qq|<div class="clearfix col-2">\n<div class="column">\n<p>One column</p>\n</div>\n<div class="column">\n<p>Another column</p>\n</div>\n</div>\n|,
 			   'two column row';
 
 			is $parser->format(qq!==\n||One column\n||Another column\n||And another\n==!),
-			   '<div class="clearfix col-3"><div class="column"><p>One column</p></div><div class="column"><p>Another column</p></div><div class="column"><p>And another</p></div></div>',
+			   qq|<div class="clearfix col-3">\n<div class="column">\n<p>One column</p>\n</div>\n<div class="column">\n<p>Another column</p>\n</div>\n<div class="column">\n<p>And another</p>\n</div>\n</div>\n|,
 			   'three column row';
+
+			is $parser->format(qq!==\n||a\n==\n==\n||b\n==!),
+			   qq|<div class="clearfix col-1">\n<div class="column">\n<p>a</p>\n</div>\n</div>\n<div class="clearfix col-1">\n<div class="column">\n<p>b</p>\n</div>\n</div>\n|,
+			   'row after row'
+		};
+
+		subtest "Row in paragraphs" => sub {
+			is 	$parser->format("para1\n==\n||Col\n==\npara2"),
+				qq|<p>para1</p>\n<div class="clearfix col-1">\n<div class="column">\n<p>Col</p>\n</div>\n</div>\n<p>para2</p>|,
+				'correct in and out of paragraphs'
 		};
 
 		subtest "Error states" => sub {
@@ -200,12 +210,10 @@ Whether you're looking for a themed set for a special occassion or straight forw
 
 As well as using it for our creations we can also offer a bespoke printing service. Design your own objects or let us work with you to create and realise your vision in high quality PLA plastic.
 ==
-
 ==
 ||
 ## Emporia
 {{etsy.jpg|<<,H100,W130}}Over the next few months we'll be opening our online stores where we'll be selling some of our premade and customisable pieces along with t-shirts and other apparel.
-
 ||
 ## Costuming
 {{mask.jpg|<<,H100,W130}}The panda team are keen costumers and going forward will be working on several exciting cosplaying projects for ourselves and others.
@@ -216,25 +224,34 @@ EOT
 ;
 
 		my $expected_html =<<EOT
-<p>Yup, we're here! <strong>Caffeinated Panda Creations</strong> has launched the first phase of our new website.</p><p>Right now as you can see the blog is up and running and we'll be using it to keep you up to date with projects, events we're involved with, and new features coming to the site. Of course we'll still be streaming updates and content on <a href="http://facebook.com/caffeinatedpandacreations" target="_new">facebook</a> and <a href="http://twitter.com/cafpanda" target="_new">twitter</a> as well so come and join us there too!</p><p>As time goes on we'll be adding new sections to the website so stay tuned for updates. Upcoming soon will be more details on our creations and services, so here's some things to whet your appetite!
+<p>Yup, we&#39;re here! <strong>Caffeinated Panda Creations</strong> has launched the first phase of our new website.</p>
+<p>Right now as you can see the blog is up and running and we&#39;ll be using it to keep you up to date with projects, events we&#39;re involved with, and new features coming to the site. Of course we&#39;ll still be streaming updates and content on <a href="http://facebook.com/caffeinatedpandacreations" target="_new">facebook</a> and <a href="http://twitter.com/cafpanda" target="_new">twitter</a> as well so come and join us there too!</p>
+<p>As time goes on we&#39;ll be adding new sections to the website so stay tuned for updates. Upcoming soon will be more details on our creations and services, so here&#39;s some things to whet your appetite!</p>
 <div class="clearfix col-2">
 <div class="column">
+
 <h2>Custom Cyberfalls</h2>
-<img src="/content/blog/the-panda-cometh/cyberfalls.jpg" class="pulled-left" width="130px" height="100px">Cyberfalls for all your cybergoth and dance needs, at Caffeinated Panda Creations we specialise in custom designs and sets with <a href="https://www.google.co.uk/search?q=el+wire&amp;safe=off&amp;tbm=isch" target="_new">EL-wire</a> installations.</p><p>Whether you're looking for a themed set for a special occassion or straight forward cyber-chic, get in touch and we'll be happy to work with you!</p>
+<img src="cyberfalls.jpg" class="pulled-left" width="130px" height="100px"><p>Cyberfalls for all your cybergoth and dance needs, at Caffeinated Panda Creations we specialise in custom designs and sets with <a href="https://www.google.co.uk/search?q=el+wire&safe=off&tbm=isch" target="_new">EL-wire</a> installations.</p>
+<p>Whether you&#39;re looking for a themed set for a special occassion or straight forward cyber-chic, get in touch and we&#39;ll be happy to work with you!</p>
 </div>
 <div class="column">
+
 <h2>3D Printing</h2>
-<img src="/content/blog/the-panda-cometh/makerbot.jpg" class="pulled-left" width="130px" height="100px"><p>We here at Caffeinated Panda Creations are the proud owners of a <a href="http://store.makerbot.com/replicator2.html" target="_new">Makerbot Replicator 2</a> 3D printer.</p><p>As well as using it for our creations we can also offer a bespoke printing service. Design your own objects or let us work with you to create and realise your vision in high quality PLA plastic.</p>
+<img src="makerbot.jpg" class="pulled-left" width="130px" height="100px"><p>We here at Caffeinated Panda Creations are the proud owners of a <a href="http://store.makerbot.com/replicator2.html" target="_new">Makerbot Replicator 2</a> 3D printer.</p>
+<p>As well as using it for our creations we can also offer a bespoke printing service. Design your own objects or let us work with you to create and realise your vision in high quality PLA plastic.</p>
 </div>
 </div>
 <div class="clearfix col-2">
 <div class="column">
+
 <h2>Emporia</h2>
-<img src="/content/blog/the-panda-cometh/etsy.jpg" class="pulled-left" width="130px" height="100px"><p>Over the next few months we'll be opening our online stores where we'll be selling some of our premade and customisable pieces along with t-shirts and other apparel.</p>
+<img src="etsy.jpg" class="pulled-left" width="130px" height="100px"><p>Over the next few months we&#39;ll be opening our online stores where we&#39;ll be selling some of our premade and customisable pieces along with t-shirts and other apparel.</p>
 </div>
 <div class="column">
+
 <h2>Costuming</h2>
-<img src="/content/blog/the-panda-cometh/mask.jpg" class="pulled-left" width="130px" height="100px"><p>The panda team are keen costumers and going forward will be working on several exciting cosplaying projects for ourselves and others.</p><p>We'll also be keeping you up to date on where we'll be appearing and giving details on how we can work with you on your own costuming projects.</p>
+<img src="mask.jpg" class="pulled-left" width="130px" height="100px"><p>The panda team are keen costumers and going forward will be working on several exciting cosplaying projects for ourselves and others.</p>
+<p>We&#39;ll also be keeping you up to date on where we&#39;ll be appearing and giving details on how we can work with you on your own costuming projects.</p>
 </div>
 </div>
 EOT

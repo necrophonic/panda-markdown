@@ -11,7 +11,7 @@ Readonly my $CLASS => 'PML::PullParser';
 use_ok $CLASS;
 
 use Log::Log4perl qw(:easy);
-Log::Log4perl->easy_init($OFF);
+Log::Log4perl->easy_init($TRACE);
 
 my $parser;
 
@@ -241,6 +241,15 @@ sub test_row_and_column_markup {
 				);
 			};
 
+		};
+
+		subtest "Row following row" => sub {
+			$parser = $CLASS->new(pml => "==\n||Column||Column\n==\n==\n||Column2||Column2\n==\n");
+			my @tokens = $parser->get_all_tokens;
+			is(get_tokens_string(\@tokens),
+				'ROW,COLUMN,STRING,COLUMN,STRING,ROW,ROW,COLUMN,STRING,COLUMN,STRING,ROW',
+				'Row with double column tokens ok'
+			);
 		};
 
 		subtest "Columns with markup" => sub {

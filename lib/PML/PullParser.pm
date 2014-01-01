@@ -3,6 +3,8 @@ package PML::PullParser;
 use strict;
 use warnings;
 
+our $VERSION = 0.01;
+
 use Log::Log4perl qw(:easy);
 Log::Log4perl->easy_init($OFF);
 
@@ -568,10 +570,14 @@ sub _get_next_token {
 		if ($state eq 'row-end-state') {
 
 			if ($char eq $SYM_NEWLINE) {
-				if ($self->data_context eq 'column-data') {
-					$self->_switch_state('data');
+				if ($self->data_context eq 'column-data') {	
+					TRACE "  -> Data context is 'column-data'";
+					$self->_emit_token;
+					$self->data_context('data');
+					$self->_switch_state('newline');
 				}
 				else {
+					TRACE "  -> Data context other than 'column-data'";
 					$self->data_context('row-data');
 					$self->_switch_state('row-data-state');
 				}
@@ -594,6 +600,7 @@ sub _get_next_token {
 			# Anything else
 			$self->_discard_token;
 			$self->_create_token({type=>'STRING',content=>"$SYM_ROW$SYM_ROW"});
+			$self->_decrement_pointer;
 			$self->_switch_to_data_state;
 			next;
 		}
@@ -623,7 +630,7 @@ sub _get_next_token {
 			}
 
 			# Anything else
-			$self->_raise_parse_error('Unexpected end of data in first column tag');
+			$self->_raise_parse_error('Unexpected char in first column tag');
 		}
 
 		# ---------------------------------------
