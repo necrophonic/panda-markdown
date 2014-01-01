@@ -6,4 +6,4 @@ A markdown type language and processor for blog postings.
 **Version 0.10**
 
 
-See the wiki for work in progress spec: [PML Wiki](https://github.com/necrophonic/panda-markdown/wiki)
+See the wiki for work in progress spec: [Caffeinated Markup Wiki](https://github.com/necrophonic/text-caffeinatedmarkup/wiki)
