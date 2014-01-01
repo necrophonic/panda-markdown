@@ -19,6 +19,8 @@ Log::Log4perl->easy_init($OFF);
 	test_rows_and_columns();
 	test_full_doc_1();
 
+	test_blockquotes();
+
 	# TESTS TO DO
 	# .. html escape
 	# .. entity escape
@@ -184,6 +186,23 @@ sub test_rows_and_columns {
 
 		};
 
+	};
+}
+
+# ------------------------------------------------------------------------------
+
+sub test_blockquotes {
+	subtest "Test blockquotes" => sub {
+
+		my $parser = PML::HTMLFormatter->new;
+
+		is $parser->format('""Very wise quote""'),
+		   qq|<blockquote>Very wise quote</blockquote>|,
+		   'quote marked up as expected (no cite)';
+
+		is $parser->format('""Very wise quote|A N Other""'),
+		   qq|<blockquote>Very wise quote<cite>A N Other</cite></blockquote>|,
+		   'quote marked up as expected (no cite)';
 	};
 }
 

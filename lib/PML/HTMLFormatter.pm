@@ -24,6 +24,12 @@ my %tags = (
 
 	PARAGRAPH_OPEN 	=> '<p>',
 	PARAGRAPH_CLOSE	=> '</p>',
+
+	BLOCKQUOTE_OPEN	=> '<blockquote>',
+	BLOCKQUOTE_CLOSE=> '</blockquote>',
+
+	BLOCKQUOTE_CITE_OPEN	=> '<cite>',
+	BLOCKQUOTE_CITE_CLOSE	=> '</cite>',
 );
 
 
@@ -77,6 +83,20 @@ sub format {
 				}
 			}
 			$self->num_breaks(0);
+		}
+
+		if ($type eq 'QUOTE') {
+
+			$self->_close_paragraph if $self->is_paragraph_open;
+
+			$$html .= $tags{BLOCKQUOTE_OPEN};
+			$$html .= $token->{body};
+
+			if ($token->{cite}) {
+				$$html .= $tags{BLOCKQUOTE_CITE_OPEN}.$token->{cite}.$tags{BLOCKQUOTE_CITE_CLOSE};
+			}
+
+			$$html .= $tags{BLOCKQUOTE_CLOSE};
 		}
 
 		if ($type eq 'ROW') {			
