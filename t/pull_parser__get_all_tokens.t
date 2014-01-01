@@ -47,9 +47,11 @@ sub test_simple_markup {
 
 	subtest "Test simple markup" => sub {
 
+		my @tokens = ();
+
 		subtest "Strong" => sub {
 			$parser = $CLASS->new(pml => 'Simple **PML** to parse');
-			my @tokens = $parser->get_all_tokens;
+			@tokens = $parser->get_all_tokens;
 			is( get_tokens_string(\@tokens), 'STRING,STRONG,STRING,STRONG,STRING', 'Strong in string' );
 			is($tokens[0]->{content}, 'Simple ',   'Token #1 correct text'	);
 			is($tokens[1]->{type}, 	  'STRONG',    'Token #2 is STRONG'		);
@@ -59,53 +61,53 @@ sub test_simple_markup {
 
 
 			$parser = $CLASS->new(pml => '**Strong** at start');
-			my @tokens = $parser->get_all_tokens;
+			@tokens = $parser->get_all_tokens;
 			is( get_tokens_string(\@tokens), 'STRONG,STRING,STRONG,STRING', 'Strong at start' );
 
 			$parser = $CLASS->new(pml => 'At the end is **Strong**');
-			my @tokens = $parser->get_all_tokens;
+			@tokens = $parser->get_all_tokens;
 			is( get_tokens_string(\@tokens), 'STRING,STRONG,STRING,STRONG', 'Strong at end' );
 		};
 
 		subtest "Emphasis" => sub {
 			$parser = $CLASS->new(pml => 'With //emphasis// in middle');
-			my @tokens = $parser->get_all_tokens;
+			@tokens = $parser->get_all_tokens;
 			is( get_tokens_string(\@tokens), 'STRING,EMPHASIS,STRING,EMPHASIS,STRING', 'Emphasis in string' );
 
 			$parser = $CLASS->new(pml => '//Emphasis// at start');
-			my @tokens = $parser->get_all_tokens;
+			@tokens = $parser->get_all_tokens;
 			is( get_tokens_string(\@tokens), 'EMPHASIS,STRING,EMPHASIS,STRING', 'Emphasis at start' );
 
 			$parser = $CLASS->new(pml => 'At the end is //emphasis//');
-			my @tokens = $parser->get_all_tokens;
+			@tokens = $parser->get_all_tokens;
 			is( get_tokens_string(\@tokens), 'STRING,EMPHASIS,STRING,EMPHASIS', 'Emphasis at end' );
 		};
 
 		subtest "Underline" => sub {
 			$parser = $CLASS->new(pml => 'With __underline__ in middle');
-			my @tokens = $parser->get_all_tokens;
+			@tokens = $parser->get_all_tokens;
 			is( get_tokens_string(\@tokens), 'STRING,UNDERLINE,STRING,UNDERLINE,STRING', 'Underline in string' );
 
 			$parser = $CLASS->new(pml => '__underline__ at start');
-			my @tokens = $parser->get_all_tokens;
+			@tokens = $parser->get_all_tokens;
 			is( get_tokens_string(\@tokens), 'UNDERLINE,STRING,UNDERLINE,STRING', 'Underline at start' );
 
 			$parser = $CLASS->new(pml => 'At the end is __underline__');
-			my @tokens = $parser->get_all_tokens;
+			@tokens = $parser->get_all_tokens;
 			is( get_tokens_string(\@tokens), 'STRING,UNDERLINE,STRING,UNDERLINE', 'Underline at end' );
 		};
 
 		subtest "Del" => sub {
 			$parser = $CLASS->new(pml => 'With --del-- in middle');
-			my @tokens = $parser->get_all_tokens;
+			@tokens = $parser->get_all_tokens;
 			is( get_tokens_string(\@tokens), 'STRING,DEL,STRING,DEL,STRING', 'Del in string' );
 
 			$parser = $CLASS->new(pml => '--del-- at start');
-			my @tokens = $parser->get_all_tokens;
+			@tokens = $parser->get_all_tokens;
 			is( get_tokens_string(\@tokens), 'DEL,STRING,DEL,STRING', 'Del at start' );
 
 			$parser = $CLASS->new(pml => 'At the end is --del--');
-			my @tokens = $parser->get_all_tokens;
+			@tokens = $parser->get_all_tokens;
 			is( get_tokens_string(\@tokens), 'STRING,DEL,STRING,DEL', 'Del at end' );
 		};
 	};
@@ -117,9 +119,11 @@ sub test_simple_markup {
 sub test_link_markup {
 	subtest "Test link markup" => sub {
 
+		my @tokens = ();
+
 		subtest "Simple link" => sub {
 			$parser = $CLASS->new(pml => "Go here [[http://www.google.com]] it's cool");
-			my @tokens = $parser->get_all_tokens;
+			@tokens = $parser->get_all_tokens;
 			is(get_tokens_string(\@tokens),'STRING,LINK,STRING','Link with just href');
 			is($tokens[1]->{href}, 'http://www.google.com', 'Href set ok');
 			is($tokens[1]->{text}, '', 'Text is null');
@@ -127,7 +131,7 @@ sub test_link_markup {
 
 		subtest "Simple link with text" => sub {
 			$parser = $CLASS->new(pml => "Go here [[http://www.google.com|Google]] it's cool");
-			my @tokens = $parser->get_all_tokens;
+			@tokens = $parser->get_all_tokens;
 			is(get_tokens_string(\@tokens),'STRING,LINK,STRING','Link with text');
 			is($tokens[1]->{href}, 'http://www.google.com', 'Href set ok');
 			is($tokens[1]->{text}, 'Google', 'Text set ok');
@@ -142,9 +146,11 @@ sub test_link_markup {
 sub test_image_markup {
 	subtest "Test image markup" => sub {
 
+		my @tokens = ();
+
 		subtest "Simple image" => sub {
 			$parser = $CLASS->new(pml => "Look at this {{cat.jpg}} Nice huh?");
-			my @tokens = $parser->get_all_tokens;
+			@tokens = $parser->get_all_tokens;
 			is(get_tokens_string(\@tokens),'STRING,IMAGE,STRING','Image with just src');
 			is($tokens[1]->{src}, 'cat.jpg', 'Src set ok');
 			is($tokens[1]->{options}, '', 'Options is null');
@@ -152,7 +158,7 @@ sub test_image_markup {
 
 		subtest "Simple image with options" => sub {
 			$parser = $CLASS->new(pml => "Look at this {{cat.jpg|>>,W29}} Nice huh?");
-			my @tokens = $parser->get_all_tokens;
+			@tokens = $parser->get_all_tokens;
 			is(get_tokens_string(\@tokens),'STRING,IMAGE,STRING','Image with just src');
 			is($tokens[1]->{src}, 'cat.jpg', 'Src set ok');
 			is($tokens[1]->{options}, '>>,W29', 'Options set ok');
@@ -167,9 +173,11 @@ sub test_image_markup {
 sub test_header_markup {
 	subtest "Test header markup" => sub {
 
+		my @tokens = ();
+
 		subtest "Simple headers 1-6" => sub {
 			$parser = $CLASS->new(pml => qq|# Header level 1|);
-			my @tokens = $parser->get_all_tokens;
+			@tokens = $parser->get_all_tokens;
 			is(get_tokens_string(\@tokens),'HEADER','Header token');
 			is($tokens[0]->{level},1,'Header level is 1');
 			is($tokens[0]->{text},'Header level 1', 'Header text is correct');
@@ -177,7 +185,7 @@ sub test_header_markup {
 
 		subtest "In line becomes string" => sub {
 			$parser = $CLASS->new(pml => qq|String then # Header level 1|);
-			my @tokens = $parser->get_all_tokens;
+			@tokens = $parser->get_all_tokens;
 			is(get_tokens_string(\@tokens),'STRING','Just a string token');
 			is($tokens[0]->{content},'String then # Header level 1', 'Content correct');
 		};
@@ -190,15 +198,17 @@ sub test_header_markup {
 sub test_newline_markup {
 	subtest "Test newline markup" => sub {
 
+		my @tokens = ();
+
 		subtest "Single newline" => sub {
 			$parser = $CLASS->new(pml => "First line\nSecond line");
-			my @tokens = $parser->get_all_tokens;
+			@tokens = $parser->get_all_tokens;
 			is(get_tokens_string(\@tokens),'STRING,NEWLINE,STRING','Single newline in string');
 		};
 
 		subtest "Double newline" => sub {
 			$parser = $CLASS->new(pml => "First line\n\nSecond line");
-			my @tokens = $parser->get_all_tokens;
+			@tokens = $parser->get_all_tokens;
 			is(get_tokens_string(\@tokens),'STRING,NEWLINE,NEWLINE,STRING','Double newline in string');
 		};
 
@@ -234,43 +244,44 @@ sub test_row_and_column_markup {
 		};
 
 		subtest "Columns with markup" => sub {
+			my @tokens = ();
 			$parser = $CLASS->new(pml => "==\n||There is something **strong** here\n||Blah\n==");
-			my @tokens = $parser->get_all_tokens;
+			@tokens = $parser->get_all_tokens;
 				is(get_tokens_string(\@tokens),
 					'ROW,COLUMN,STRING,STRONG,STRING,STRONG,STRING,COLUMN,STRING,ROW',
 					'Column with strong markup'
 				);
 
 			$parser = $CLASS->new(pml => "==\n||There is something //emphasised// here\n||Blah\n==");
-			my @tokens = $parser->get_all_tokens;
+			@tokens = $parser->get_all_tokens;
 				is(get_tokens_string(\@tokens),
 					'ROW,COLUMN,STRING,EMPHASIS,STRING,EMPHASIS,STRING,COLUMN,STRING,ROW',
 					'Column with emphasis markup'
 				);
 
 			$parser = $CLASS->new(pml => "==\n||There is something __underlined__ here\n||Blah\n==");
-			my @tokens = $parser->get_all_tokens;
+			@tokens = $parser->get_all_tokens;
 				is(get_tokens_string(\@tokens),
 					'ROW,COLUMN,STRING,UNDERLINE,STRING,UNDERLINE,STRING,COLUMN,STRING,ROW',
 					'Column with Underline markup'
 				);
 
 			$parser = $CLASS->new(pml => "==\n||There is something --deleted-- here\n||Blah\n==");
-			my @tokens = $parser->get_all_tokens;
+			@tokens = $parser->get_all_tokens;
 				is(get_tokens_string(\@tokens),
 					'ROW,COLUMN,STRING,DEL,STRING,DEL,STRING,COLUMN,STRING,ROW',
 					'Column with delete markup'
 				);
 
 			$parser = $CLASS->new(pml => "==\n||[[http://cafpanda.com]]||Blah\n==");
-			my @tokens = $parser->get_all_tokens;
+			@tokens = $parser->get_all_tokens;
 				is(get_tokens_string(\@tokens),
 					'ROW,COLUMN,LINK,COLUMN,STRING,ROW',
 					'Column with link markup'
 				);
 
 			$parser = $CLASS->new(pml => "==\n||{{panda.png}}||Blah\n==");
-			my @tokens = $parser->get_all_tokens;
+			@tokens = $parser->get_all_tokens;
 				is(get_tokens_string(\@tokens),
 					'ROW,COLUMN,IMAGE,COLUMN,STRING,ROW',
 					'Column with image markup'
