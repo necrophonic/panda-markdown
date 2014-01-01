@@ -4,12 +4,12 @@ use strict;
 use Test::More;
 use Test::Exception;
 
-use_ok 'PML::HTMLFormatter';
+use_ok 'Text::CaffeinatedMarkup::HTMLFormatter';
 
 use Log::Log4perl qw(:easy);
 Log::Log4perl->easy_init($OFF);
 
-	can_ok('PML::HTMLFormatter',qw|format _match_tag|);
+	can_ok('Text::CaffeinatedMarkup::HTMLFormatter',qw|format _match_tag|);
 
 	test_simple();
 	test_headers();
@@ -32,7 +32,7 @@ done_testing();
 
 sub test_simple {
 	subtest "Simple markup test" => sub {
-		my $parser = PML::HTMLFormatter->new;
+		my $parser = Text::CaffeinatedMarkup::HTMLFormatter->new;
 		is($parser->format('**abc**'),'<p><strong>abc</strong></p>','Strong');
 		is($parser->format('//abc//'),'<p><em>abc</em></p>','Emphasis');
 		is($parser->format('__abc__'),'<p><u>abc</u></p>','Underline');
@@ -44,7 +44,7 @@ sub test_simple {
 
 sub test_headers {
 	subtest "Simple markup test" => sub {
-		my $parser = PML::HTMLFormatter->new;
+		my $parser = Text::CaffeinatedMarkup::HTMLFormatter->new;
 		is($parser->format('# My header'),	"\n<h1>My header</h1>\n",'Header 1');
 		is($parser->format('## My header'),	"\n<h2>My header</h2>\n",'Header 2');
 		is($parser->format('### My header'),"\n<h3>My header</h3>\n",'Header 3');
@@ -55,7 +55,7 @@ sub test_headers {
 
 sub test_links {
 	subtest "Simple links" => sub {
-		my $parser = PML::HTMLFormatter->new;
+		my $parser = Text::CaffeinatedMarkup::HTMLFormatter->new;
 		is($parser->format('[[http://here.com]]'),
 			'<a href="http://here.com" target="_new">http://here.com</a>',
 			'Simple link - no text');
@@ -70,13 +70,13 @@ sub test_links {
 
 sub test_images {
 	subtest "Simple images" => sub {
-		my $parser = PML::HTMLFormatter->new;
+		my $parser = Text::CaffeinatedMarkup::HTMLFormatter->new;
 		is($parser->format('{{image.jpg}}'), '<img src="image.jpg">', 'Relative image');
 		is($parser->format('{{http://a.com/image.jpg}}'), '<img src="http://a.com/image.jpg">', 'Absolute image');
 	};
 
 	subtest "Images with align options" => sub {
-		my $parser = PML::HTMLFormatter->new;
+		my $parser = Text::CaffeinatedMarkup::HTMLFormatter->new;
 		is($parser->format('{{i.jpg|<<}}'), '<img src="i.jpg" class="pulled-left">',  'Pull left');
 		is($parser->format('{{i.jpg|>>}}'), '<img src="i.jpg" class="pulled-right">', 'Pull right');
 		is($parser->format('{{i.jpg|><}}'), '<img src="i.jpg" class="centered">', 	  'Centered');
@@ -84,19 +84,19 @@ sub test_images {
 	};
 
 	subtest "Images with width options" => sub {
-		my $parser = PML::HTMLFormatter->new;
+		my $parser = Text::CaffeinatedMarkup::HTMLFormatter->new;
 		is($parser->format('{{i.jpg|W10}}'), '<img src="i.jpg" width="10px">', 'Width 10');
 		is($parser->format('{{i.jpg|W9}}'),  '<img src="i.jpg" width="9px">',  'Width 9');		
 	};
 
 	subtest "Images with height options" => sub {
-		my $parser = PML::HTMLFormatter->new;
+		my $parser = Text::CaffeinatedMarkup::HTMLFormatter->new;
 		is($parser->format('{{i.jpg|H10}}'), '<img src="i.jpg" height="10px">', 'Height 10');
 		is($parser->format('{{i.jpg|H9}}'),  '<img src="i.jpg" height="9px">',  'Height 9');		
 	};
 
 	subtest "Images with mixed options" => sub {
-		my $parser = PML::HTMLFormatter->new;
+		my $parser = Text::CaffeinatedMarkup::HTMLFormatter->new;
 		is($parser->format('{{i.jpg|<<,W10,H11}}'),
 			'<img src="i.jpg" class="pulled-left" width="10px" height="11px">',
 			'All options');
@@ -108,7 +108,7 @@ sub test_images {
 sub test_breaks {
 	subtest "Test breaks" => sub {
 
-		my $parser = PML::HTMLFormatter->new;
+		my $parser = Text::CaffeinatedMarkup::HTMLFormatter->new;
 		
 		subtest "Simple single breaks" => sub {
 			is $parser->format("Something\nbroken\ntwice"),
@@ -138,7 +138,7 @@ sub test_breaks {
 sub test_rows_and_columns {
 	subtest "Test rows and columns" => sub {
 
-		my $parser = PML::HTMLFormatter->new;
+		my $parser = Text::CaffeinatedMarkup::HTMLFormatter->new;
 
 		subtest "Simple rows and columns" => sub {
 			is $parser->format(qq!==\n||One column\n||Another column\n==!),
@@ -194,7 +194,7 @@ sub test_rows_and_columns {
 sub test_blockquotes {
 	subtest "Test blockquotes" => sub {
 
-		my $parser = PML::HTMLFormatter->new;
+		my $parser = Text::CaffeinatedMarkup::HTMLFormatter->new;
 
 		is $parser->format('""Very wise quote""'),
 		   qq|<blockquote>Very wise quote</blockquote>|,
@@ -276,7 +276,7 @@ EOT
 EOT
 ;
 
-		my $formatter = PML::HTMLFormatter->new();
+		my $formatter = Text::CaffeinatedMarkup::HTMLFormatter->new();
 		my $html = $formatter->format( $input_pml );
 		is( $html, $expected_html, 'HTML as expected' );
 

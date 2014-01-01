@@ -7,7 +7,7 @@ use Test::Exception;
 
 
 use Readonly;
-Readonly my $CLASS => 'PML::PullParser';
+Readonly my $CLASS => 'Text::CaffeinatedMarkup::PullParser';
 
 use_ok $CLASS;
 
@@ -20,7 +20,7 @@ my $parser = undef;
 subtest "Instantiation" => sub {
 
 	throws_ok { $CLASS->new() }
-		qr/Must supply 'pml' to PML::PullParser/,
+		qr/Must supply 'pml' to Text::CaffeinatedMarkup::PullParser/,
 		'new() dies with no pml supplied';
 
 	lives_ok { $parser = new_ok $CLASS, ['pml'=>'Some PML'] }

@@ -4,12 +4,12 @@ use strict;
 use warnings;
 
 use Test::More;
-use PML::HTMLFormatter;
+use Text::CaffeinatedMarkup::HTMLFormatter;
 
 my $pml_with_html;
 my $expect;
 
-my $formatter = PML::HTMLFormatter->new;
+my $formatter = Text::CaffeinatedMarkup::HTMLFormatter->new;
 
 # TEST 1
 $pml_with_html 	= 'This has some <html> in it & some display entities: &amp;';

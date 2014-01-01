@@ -1,4 +1,4 @@
-package PML::PullParser;
+package Text::CaffeinatedMarkup::PullParser;
 
 use strict;
 use warnings;

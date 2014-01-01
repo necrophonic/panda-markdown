@@ -6,7 +6,7 @@ use Test::More;
 use Test::Exception;
 
 use Readonly;
-Readonly my $CLASS => 'PML::PullParser';
+Readonly my $CLASS => 'Text::CaffeinatedMarkup::PullParser';
 
 use_ok $CLASS;
 

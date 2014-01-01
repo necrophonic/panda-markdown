@@ -1,4 +1,4 @@
-package PML::HTMLFormatter;
+package Text::CaffeinatedMarkup::HTMLFormatter;
 
 use v5.10;
 use strict;
@@ -8,7 +8,7 @@ use Log::Log4perl qw(:easy);
 Log::Log4perl->easy_init($OFF);
 
 use Moo;
-use PML::PullParser;
+use Text::CaffeinatedMarkup::PullParser;
 use HTML::Escape qw/escape_html/;
 
 
@@ -45,7 +45,7 @@ has 'row_columns'			=> (is=>'rw');
 sub format {
 	my ($self, $pml) = @_;
 
-	my $parser = PML::PullParser->new(pml => $pml);
+	my $parser = Text::CaffeinatedMarkup::PullParser->new(pml => $pml);
 
 	my @tokens = $parser->get_all_tokens;
 	
