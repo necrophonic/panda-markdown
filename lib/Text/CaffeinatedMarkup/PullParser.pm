@@ -961,3 +961,66 @@ sub _create_token {
 }
 
 1;
+
+__END__
+
+=pod
+
+=head1 Title
+
+Text::CaffeinatedMarkup::PullParser
+
+=head1 Synopsis
+
+  use Text::CaffeinatedMarkup::PullParser;
+
+  my $parser = Text::CaffeinatedMarkup::PullParser->new( pml => 'Parse **this**' );
+
+  my @tokens = $parser->get_all_tokens;
+
+  # or
+
+  while (my $token = $parser->get_next_token) {
+	 # ...
+  }
+
+=head1 Description
+
+This module implements a I<Pull Parser> for C<The Caffeinated Markup Language>.
+For details on the syntax that B<CML> implements, please see the
+L<Github wiki|https://github.com/necrophonic/text-caffeinatedmarkup/wiki>.
+
+This module isn't designed to be used directly in a client, but instead used by a
+I<formatter> such as L<Text::CaffeinatedMarkup::HTMLFormatter>.
+
+
+=head1 Methods
+
+This module implements the following methods.
+
+=head2 get_next_token
+
+  my $token = $parser->get_next_token;
+
+Whilst there is a token to return, this method will return it. If there are no
+tokens left then this will return 0 (zero).
+
+
+=head2 get_all_tokens
+
+  my @tokens   = $parser->get_all_tokens;
+  my $tokens_r = $parser->get_all_tokens;
+  
+Returns all the tokens from the parsed document.
+
+Please note, this uses C<get_next_token> internally so, if you've already called
+C<get_next_token> a couple of times and rhen call C<get_all_tokens>, then
+C<get_all_tokens> will return all the rest of the tokens I<from that point onwards> and
+not the entire document.
+
+
+=head1 See Also
+
+L<The Github wiki|https://github.com/necrophonic/text-caffeinatedmarkup/wiki>
+
+=cut

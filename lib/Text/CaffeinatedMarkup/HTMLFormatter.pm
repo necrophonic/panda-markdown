@@ -280,3 +280,46 @@ sub _close_paragraph {
 }
 
 1;
+
+__END__
+
+=pod
+
+=head1 Title
+
+Text::CaffeinatedMarkup::HTMLFormatter - HTML formatter for the Caffeinated Markup Language
+
+=head1 Synopsis
+
+  use Text::CaffeinatedMarkup::HTMLFormatter;
+
+  my $formatter = Text::CaffeinatedMarkup::HTMLFormatter->new;
+
+  my $to_format = 'Some **stuff** to be //parsed//';
+
+  my $html = $formatter->format($to_format);
+
+=head1 Description
+
+Provides formatting to HTML for the I<Caffeinated Markup Language>. Implemented using
+the L<Text::CaffeinatedMarkup::PullParser>.
+
+For details on the syntax that B<CML> implements, please see the
+L<Github wiki|https://github.com/necrophonic/text-caffeinatedmarkup/wiki>.
+
+=head1 Methods
+
+This module provides the following methods.
+
+=head2 format
+
+  my $html = $formatter->format( 'something to format' );
+
+Takes a raw string in I<Caffeinated Markup> format and returns a string of encoded HTML.
+
+
+=head1 See Also
+
+L<The Github wiki|https://github.com/necrophonic/text-caffeinatedmarkup/wiki>
+
+=cut
