@@ -1023,4 +1023,8 @@ not the entire document.
 
 L<The Github wiki|https://github.com/necrophonic/text-caffeinatedmarkup/wiki>
 
+=head1 Author
+
+J Gregory <jgregory@cpan.org>
+
 =cut
