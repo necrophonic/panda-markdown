@@ -1,0 +1,46 @@
+=pod
+
+=head1 Caffeinated Markup Lanaguage Syntax
+
+=head1 Synopsis
+
+  TODO
+
+=head1 Syntax
+
+=head2 Simple Marks
+
+  TODO
+
+=head2 Section Divider
+
+  ~~
+
+What was known as horizontal rule in HTML4 and "end of a section, start of another" in HTML5.
+
+It should appear on a line on it's own.
+
+  Example
+
+  This is a section
+  ~~
+  This is another section
+
+
+=head2 Blockquote
+
+  "" <quote> ""
+  "" <quote> | <cite> ""
+
+Defines a quoted sectoon of text with optional citation.
+
+  Example - no citation
+
+  ""The quick brown foo jumped over the lazy bar""
+
+  Example - with citation
+
+  ""The quick brown foo jumped over the lazy bar|A.N.Other""
+
+
+=cut
