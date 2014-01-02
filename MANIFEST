@@ -1,5 +1,5 @@
-lib/PML/PullParser.pm
-lib/PML/HTMLFormatter.pm
+lib/Text/CaffeinatedMarkup/PullParser.pm
+lib/Text/CaffeinatedMarkup/HTMLFormatter.pm
 README.md
 Makefile.PL
 MANIFEST
