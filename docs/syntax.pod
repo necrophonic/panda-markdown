@@ -2,6 +2,9 @@
 
 =head1 Caffeinated Markup Lanaguage Syntax
 
+The Caffeinated Markup Language is agnostic of it's eventual format so makes no assumptions about (for example) HTML structure.
+
+
 =head1 Synopsis
 
   TODO
