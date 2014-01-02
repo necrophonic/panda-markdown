@@ -318,6 +318,64 @@ This module provides the following methods.
 Takes a raw string in I<Caffeinated Markup> format and returns a string of encoded HTML.
 
 
+=head1 Mappings
+
+The various markup elements are mapped to HTML by this formatter as follows.
+
+=head3 strong
+
+  **foo** -> <strong>foo</strong>
+
+=head3 emphasis
+
+  //foo// -> <em>foo</em>
+
+=head3 underline
+
+  __foo__ -> <u>foo</u>
+
+=head3 delete
+
+  --foo-- -> <del>foo</del>
+
+=head3 section divider
+
+  ~~ -> <hr>
+
+=head3 blockquote
+
+  ""foo""     -> <blockquote>foo</blockquote>
+  ""foo|bar"" -> <blockquote>foo<cite>bar</cite></blockquote>
+
+=head3 headers
+
+  # foo    -> <h1>foo</h1>
+  ## foo   -> <h2>foo</h2>
+  ### foo  -> <h3>foo</h3>
+
+=head3 hyperlinks
+
+  [[http://www.google.com]]        -> <a href="http://www.google.com">http://www.google.com</a>
+  [[http://www.google.com|google]] -> <a href="http://www.google.com">google</a>
+
+=head3 images
+
+  {{foo.jpg}}            -> <img src="foo.jpg">
+  {{foo.jpg|<<,H10,W10}} -> <img src="foo.jpg" class="pulled-left" width="10px" height="10px">
+
+=head3 newlines and paragraphs
+
+  \n    -> <br>
+  \n\n  -> <p>  # (3+ \n still becomes single <p>)
+
+=head3 rows and columns
+
+  ==\n||foo\n||bar\n== -> <div class="clearfix col-2">
+                          <div class="column">foo</div>
+                          <div class="column">bar</div>
+                          </div>
+
+
 =head1 See Also
 
 L<The Github wiki|https://github.com/necrophonic/text-caffeinatedmarkup/wiki>
