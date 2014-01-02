@@ -1,0 +1,12 @@
+=pod
+
+=head1 Caffeinated Markup Language
+
+Please see the wiki at L<https://github.com/necrophonic/text-caffeinatedmarkup/wiki>
+for details for the language and usage guides.
+
+=head1 Author
+
+J Gregory <jgregory@cpan.org>
+
+=cut
