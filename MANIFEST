@@ -1,6 +1,6 @@
 lib/Text/CaffeinatedMarkup/PullParser.pm
 lib/Text/CaffeinatedMarkup/HTMLFormatter.pm
-README.md
+lib/Text/CaffeinatedMarkup/FAQ.pod
 Makefile.PL
 MANIFEST
 LICENSE
@@ -12,4 +12,3 @@ t/markdown-safe-html.t
 t/pull_parser.t
 t/html_formatter.t
 t/pull_parser__get_all_tokens.t
-
