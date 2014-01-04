@@ -1,3 +1,7 @@
+0.11.1 2014-01-4
+	- Add initial FAQ pod
+	
+
 0.11 2014-01-02
 	- Repackage as Text::CaffeinatedMarkup::
 
