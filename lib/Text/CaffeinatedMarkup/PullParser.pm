@@ -3,7 +3,7 @@ package Text::CaffeinatedMarkup::PullParser;
 use strict;
 use warnings;
 
-our $VERSION = 0.01;
+our $VERSION = 0.02;
 
 use Log::Log4perl qw(:easy);
 Log::Log4perl->easy_init($OFF);
@@ -16,6 +16,8 @@ has 'num_pml_chars'		=> (is=>'rw');
 
 has 'temporary_token'			=> (is=>'rw');
 has 'temporary_token_context'	=> (is=>'rw');
+
+has 'temporary_escaped_state'	=> (is=>'rw');
 
 has 'tokens'				=> (is=>'rw');
 has 'has_finished_parsing'	=> (is=>'rw');
@@ -44,13 +46,14 @@ my $SYM_NEWLINE			= "\n";
 my $SYM_SECTION_BREAK	= '~';
 my $SYM_HEADER 			= '#';
 
-my $SYM_ROW		= '=';
-my $SYM_COLUMN	= '|';
+my $SYM_ROW					 = '=';
+my $SYM_COLUMN				 = '|';
 
 my $SYM_QUOTE				 = '"';
 my $SYM_QUOTE_CONTEXT_SWITCH = '|';
 
-my $SYM_ESCAPE	= "\\";
+my $SYM_ESCAPE			 	 = "\\";
+my $SYM_REGION_ESCAPE 	  	 = '%';
 
 
 # ------------------------------------------------------------------------------
@@ -72,7 +75,6 @@ sub BUILD {
 	$self->state('newline');
 
 	$self->data_context([]);
-	#$self->data_context('data');
 
 	return;
 }
@@ -115,27 +117,93 @@ sub _get_next_token {
 
 		TRACE "  Read char [$char]";
 
+		# ---------------------------------------
+
+		# Check whether we've been asked to escape the next char.
+		# If so then output it to the current output buffer then
+		# pop the data context.
+		if ($self->_get_data_context eq 'escape') {
+			# Reset to previous context
+			$self->_pop_data_context;
+
+			if ($self->temporary_token_context) {
+				$self->temporary_token->{ $self->temporary_token_context } .= $char;
+				next;
+			}
+
+			# TODO append to current output buffer			
+			
+			$self->_append_to_string_token( $char );
+			next;
+			
+			
+
+			#unless ($token_context) {
+		#		$self->_raise_parse_error('Escape failed - no current token context');
+	#		}
+			
+			#next;			
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'escape-region-start') {
+			if ($char eq $SYM_REGION_ESCAPE) {
+				$self->_switch_state('escape-region');
+				next;
+			}
+
+			# Anything else
+			$self->_append_to_string_token( $SYM_REGION_ESCAPE );
+			$self->_decrement_pointer;
+			$self->_switch_to_data_state;
+			next;
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'escape-region') {
+			if ($char eq $SYM_REGION_ESCAPE) {
+				$self->_switch_state('escape-region-end');
+				next;
+			}
+
+			# Anything else
+			$self->_append_to_string_token( $char );
+			next;
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'escape-region-end') {
+			if ($char eq $SYM_REGION_ESCAPE) {
+				$self->_switch_to_data_state;
+				next;
+			}
+
+			# Anything else
+			$self->_append_to_string_token( $SYM_REGION_ESCAPE );
+			$self->_decrement_pointer;			
+			next;	
+		}
+
+		# ---------------------------------------
+
 		if ($state eq 'data') {
 
 			#$self->data_context('data'); # REMOVE
 
-			if ($char eq $SYM_STRONG)   { $self->_switch_state('strong');    next; }
-			if ($char eq $SYM_EMPHASIS) { $self->_switch_state('emphasis');  next; }
-			if ($char eq $SYM_UNDERLINE){ $self->_switch_state('underline'); next; }
-			if ($char eq $SYM_DELETE)	{ $self->_switch_state('delete');	 next; }
+			if ($char eq $SYM_STRONG)		 { $self->_switch_state('strong');    	next; }
+			if ($char eq $SYM_EMPHASIS) 	 { $self->_switch_state('emphasis');  	next; }
+			if ($char eq $SYM_UNDERLINE)	 { $self->_switch_state('underline'); 	next; }
+			if ($char eq $SYM_DELETE)		 { $self->_switch_state('delete');	 	next; }
+			if ($char eq $SYM_QUOTE) 		 { $self->_switch_state('quote-start'); next; }
+			if ($char eq $SYM_LINK_START) 	 { $self->_switch_state('link-start'); 	next; }
+			if ($char eq $SYM_IMAGE_START) 	 { $self->_switch_state('image-start'); next; }
+			if ($char eq $SYM_REGION_ESCAPE) { $self->_switch_state('escape-region-start'); next; }
 
-			if ($char eq $SYM_QUOTE) {
-				$self->_switch_state('quote-start');
-				next;
-			}
-
-			if ($char eq $SYM_LINK_START) {
-				$self->_switch_state('link-start');
-				next;
-			}
-
-			if ($char eq $SYM_IMAGE_START) {
-				$self->_switch_state('image-start');
+			if ($char eq $SYM_ESCAPE) {
+				$self->_push_data_context('escape');			
 				next;
 			}
 
@@ -388,8 +456,18 @@ sub _get_next_token {
 
 		if ($state eq 'image-src') {
 
-			if ($char eq $SYM_IMAGE_CONTEXT_SWITCH) { $self->_switch_state('image-options'); next }
-			if ($char eq $SYM_IMAGE_END) 			{ $self->_switch_state('image-end');	 next }
+			if ($char eq $SYM_ESCAPE) {
+				$self->_push_data_context('escape');
+				next;
+			}
+
+			if ($char eq $SYM_IMAGE_CONTEXT_SWITCH) {
+				$self->_switch_state('image-options');
+				$self->temporary_token_context('options');
+				next;
+			}
+
+			if ($char eq $SYM_IMAGE_END){ $self->_switch_state('image-end'); next; }
 			
 			if ($char eq 'EOF') {
 				$self->_raise_parse_error("Unexpected 'EOF' while parsing image src");
@@ -409,6 +487,11 @@ sub _get_next_token {
 		# ---------------------------------------
 
 		if ($state eq 'image-options') {
+
+			if ($char eq $SYM_ESCAPE) {
+				$self->_push_data_context('escape');
+				next;
+			}
 
 			if ($char eq $SYM_IMAGE_END) {
 				$self->_switch_state('image-end');
