@@ -132,17 +132,14 @@ sub _get_next_token {
 			}
 
 			# TODO append to current output buffer			
+
+			# If we're here then we're expecting to be in 'data' context
+			if ($self->_get_data_context ne 'data') {
+				$self->_raise_parse_error('Unexpected data context in escape');
+			}
 			
 			$self->_append_to_string_token( $char );
 			next;
-			
-			
-
-			#unless ($token_context) {
-		#		$self->_raise_parse_error('Escape failed - no current token context');
-	#		}
-			
-			#next;			
 		}
 
 		# ---------------------------------------
@@ -355,6 +352,8 @@ sub _get_next_token {
 
 		if ($state eq 'link-href') {
 
+			if ($char eq $SYM_ESCAPE) { $self->_push_data_context('escape'); next; }
+
 			if ($char eq $SYM_LINK_CONTEXT_SWITCH) {
 				$self->temporary_token_context('text');
 				$self->_switch_state('link-text');
@@ -380,6 +379,8 @@ sub _get_next_token {
 		# ---------------------------------------
 
 		if ($state eq 'link-text') {
+
+			if ($char eq $SYM_ESCAPE) { $self->_push_data_context('escape'); next; }
 
 			if ($char eq $SYM_LINK_END) {
 				$self->_switch_state('link-end');
@@ -456,10 +457,7 @@ sub _get_next_token {
 
 		if ($state eq 'image-src') {
 
-			if ($char eq $SYM_ESCAPE) {
-				$self->_push_data_context('escape');
-				next;
-			}
+			if ($char eq $SYM_ESCAPE) { $self->_push_data_context('escape'); next; }
 
 			if ($char eq $SYM_IMAGE_CONTEXT_SWITCH) {
 				$self->_switch_state('image-options');
@@ -488,10 +486,7 @@ sub _get_next_token {
 
 		if ($state eq 'image-options') {
 
-			if ($char eq $SYM_ESCAPE) {
-				$self->_push_data_context('escape');
-				next;
-			}
+			if ($char eq $SYM_ESCAPE) { $self->_push_data_context('escape'); next; }
 
 			if ($char eq $SYM_IMAGE_END) {
 				$self->_switch_state('image-end');

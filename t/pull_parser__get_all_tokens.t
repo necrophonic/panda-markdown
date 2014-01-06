@@ -447,7 +447,28 @@ sub test_escaping_markup {
 		};
 
 		subtest "Escaping in hyperlinks" => sub {
-			ok(1); #TODO
+			subtest "Backslash escape in href" => sub {
+				$parser = $CLASS->new(pml => '[[som\%%where]]');
+				@tokens = $parser->get_all_tokens;
+				is get_tokens_string(\@tokens), 'LINK', 'link token ok';
+				is $tokens[0]->{href},	'som%%where', 	'link href ok';
+			};
+
+			subtest "Backslash escape in both" => sub {
+				$parser = $CLASS->new(pml => '[[som\%%where|\**here]]');
+				@tokens = $parser->get_all_tokens;
+				is get_tokens_string(\@tokens), 'LINK', 'link token ok';
+				is $tokens[0]->{href},	'som%%where', 	'link href ok';
+				is $tokens[0]->{text},	'**here', 		'link text ok';
+			};
+
+			subtest "Backslash escape in text" => sub {
+				$parser = $CLASS->new(pml => '[[somewhere|\**here]]');
+				@tokens = $parser->get_all_tokens;
+				is get_tokens_string(\@tokens), 'LINK', 'link token ok';
+				is $tokens[0]->{href},	'somewhere', 	'link href ok';
+				is $tokens[0]->{text},	'**here', 		'link text ok';
+			};
 		};
 
 	};

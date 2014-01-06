@@ -1,8 +1,12 @@
-0.12
-	- Add support for escaping syntax (backslash and region)
+0.12 2014-01-06
+	- Add support for escaping syntax (backslash and region) in pull parser
+	- Escape works in:
+	  - Data context (outside any block)
+	  - Image blocks
+	  - Hyperlink blocks
 
 
-0.11.1 2014-01-4
+0.11.1 2014-01-04
 	- Add initial FAQ pod
 
 

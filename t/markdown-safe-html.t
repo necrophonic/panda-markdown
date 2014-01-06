@@ -17,8 +17,8 @@ $expect 		= '<p>This has some &lt;html&gt; in it &amp; some display entities: &a
 is($formatter->format($pml_with_html), $expect, 'Test #1 output HTML as expected (Basic)');
 
 # TEST 2
-$pml_with_html 	= 'Test some <html> across\n<p>several</p>\nlines & see what happens';
-$expect 		= '<p>Test some &lt;html&gt; across\n&lt;p&gt;several&lt;/p&gt;\nlines &amp; see what happens</p>';
+$pml_with_html 	= "Test some <html> across\n<p>several</p>\nlines & see what happens";
+$expect 		= "<p>Test some &lt;html&gt; across<br>&lt;p&gt;several&lt;/p&gt;<br>lines &amp; see what happens</p>";
 is($formatter->format($pml_with_html), $expect, 'Test #2 output HTML as expected (Multiline)');
 
 # TEST 3
