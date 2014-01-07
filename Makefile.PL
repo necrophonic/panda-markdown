@@ -8,7 +8,7 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
 	NAME		=> 'Text::CaffeinatedMarkup',
-	VERSION		=> '0.12.1',
+	VERSION		=> '0.12',
 	ABSTRACT	=> 'Panda blog orientated markup',
 	AUTHOR		=> 'J Gregory <john@johngregory.me.uk>',
 	LICENSE		=> 'artistic_2',
