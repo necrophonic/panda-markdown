@@ -13,9 +13,8 @@ use_ok $CLASS;
 use Log::Log4perl qw(:easy);
 Log::Log4perl->easy_init($OFF);
 
-my $parser;
+my $parser = undef;
 my @tokens = ();
-	
 
 # ------------------------------------------------------------------------------
 
@@ -23,9 +22,10 @@ sub get_tokens_string {	join ',', map { $_->{type} } @{$_[0]}; }
 
 # ------------------------------------------------------------------------------
 
-subtest "Simple parse" => sub {
-	$parser = $CLASS->new(pml => 'Simple **PML** to parse');
-	lives_ok {@tokens = $parser->get_all_tokens()}, 'Parse without error';	
+subtest "Simple section break" => sub {
+	$parser = $CLASS->new(pml => '~~');
+	my @tokens = $parser->get_all_tokens;
+	is(get_tokens_string(\@tokens),'SECTIONBREAK','Section break');	
 };
 
 # ------------------------------------------------------------------------------
