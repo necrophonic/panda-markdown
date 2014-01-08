@@ -10,7 +10,7 @@ WriteMakefile(
 	NAME		=> 'Caffeinated_Markup_Language',
 	VERSION		=> '0.11.1',
 	ABSTRACT	=> 'Panda blog orientated markup',
-	AUTHOR		=> 'J Gregory <john@johngregory.me.uk>',
+	AUTHOR		=> 'J Gregory <jgregory@cpan.org>',
 	LICENSE		=> 'artistic_2',
 	PREREQ_PM	=> {
 		'Moo'	   	   => '1.003001',
