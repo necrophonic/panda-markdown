@@ -43,6 +43,16 @@ subtest "Backslash escaping" => sub {
 	is get_tokens_string(\@tokens), 'STRING', 			 'Escape underline - tokens';
 	is $tokens[0]->{content}, 'Take this __literally__', 'Escape underline - content';
 
+	$parser = $CLASS->new(pml => '\## Header');
+	@tokens = $parser->get_all_tokens;
+	is get_tokens_string(\@tokens), 'STRING', 			 'Escape header - tokens';
+	is $tokens[0]->{content}, '## Header', 				 'Escape header - content';
+
+	$parser = $CLASS->new(pml => '\~~');
+	@tokens = $parser->get_all_tokens;
+	is get_tokens_string(\@tokens), 'STRING', 			 'Escape divider - tokens';
+	is $tokens[0]->{content}, '~~', 				 	 'Escape divider - content';
+
 	$parser = $CLASS->new(pml => 'Take this \{{literally}}');
 	@tokens = $parser->get_all_tokens;
 	is get_tokens_string(\@tokens), 'STRING', 			 'Escape image (opening set) - tokens';
@@ -102,32 +112,90 @@ subtest "Escaping in images" => sub {
 		is $tokens[0]->{src}, 'image.jpg', 		 'image src ok';
 		is $tokens[0]->{options}, '**,>>', 		 'image options ok';
 	};
+
+	subtest "Backslash escape context switch" => sub {
+		$parser = $CLASS->new(pml => '{{im\|age.jpg|\**,>>}}');				
+		@tokens = $parser->get_all_tokens;
+		is get_tokens_string(\@tokens), 'IMAGE', 'image token ok';
+		is $tokens[0]->{src}, 'im|age.jpg', 	 'image src ok';
+		is $tokens[0]->{options}, '**,>>', 		 'image options ok';
+	};
 };
 
 # ------------------------------------------------------------------------------
 
 subtest "Escaping in hyperlinks" => sub {
-	subtest "Backslash escape in href" => sub {
-		$parser = $CLASS->new(pml => '[[som\%%where]]');
+	subtest "Backslash" => sub {
+		subtest "escape in href" => sub {
+			$parser = $CLASS->new(pml => '[[som\%%where]]');
+			@tokens = $parser->get_all_tokens;
+			is get_tokens_string(\@tokens), 'LINK', 'link token ok';
+			is $tokens[0]->{href},	'som%%where', 	'link href ok';
+		};
+
+		subtest "escape in both" => sub {
+			$parser = $CLASS->new(pml => '[[som\%%where|\**here]]');
+			@tokens = $parser->get_all_tokens;
+			is get_tokens_string(\@tokens), 'LINK', 'link token ok';
+			is $tokens[0]->{href},	'som%%where', 	'link href ok';
+			is $tokens[0]->{text},	'**here', 		'link text ok';
+		};
+
+		subtest "escape in text" => sub {
+			$parser = $CLASS->new(pml => '[[somewhere|\**here]]');
+			@tokens = $parser->get_all_tokens;
+			is get_tokens_string(\@tokens), 'LINK', 'link token ok';
+			is $tokens[0]->{href},	'somewhere', 	'link href ok';
+			is $tokens[0]->{text},	'**here', 		'link text ok';
+		};
+
+		subtest "escape context switch" => sub {
+			$parser = $CLASS->new(pml => '[[som\|ewhere|\**here]]');
+			@tokens = $parser->get_all_tokens;
+			is get_tokens_string(\@tokens), 'LINK', 'link token ok';
+			is $tokens[0]->{href},	'som|ewhere', 	'link href ok';
+			is $tokens[0]->{text},	'**here', 		'link text ok';
+		};
+	};	
+};
+
+# ------------------------------------------------------------------------------
+
+subtest "Escaping in quotes" => sub {
+
+	subtest "simple backslash escape" => sub {
+		$parser = $CLASS->new(pml => 'Something then \""not a quote\""');
 		@tokens = $parser->get_all_tokens;
-		is get_tokens_string(\@tokens), 'LINK', 'link token ok';
-		is $tokens[0]->{href},	'som%%where', 	'link href ok';
+		is get_tokens_string(\@tokens), 'STRING', 'tokens ok';
+		is $tokens[0]->{content}, 'Something then ""not a quote""', 'content ok';
 	};
 
-	subtest "Backslash escape in both" => sub {
-		$parser = $CLASS->new(pml => '[[som\%%where|\**here]]');
+	subtest "simple region escape" => sub {
+		$parser = $CLASS->new(pml => 'Something %%then ""not a quote""%%');
 		@tokens = $parser->get_all_tokens;
-		is get_tokens_string(\@tokens), 'LINK', 'link token ok';
-		is $tokens[0]->{href},	'som%%where', 	'link href ok';
-		is $tokens[0]->{text},	'**here', 		'link text ok';
+		is get_tokens_string(\@tokens), 'STRING', 'tokens ok';
+		is $tokens[0]->{content}, 'Something then ""not a quote""', 'content ok';
 	};
 
-	subtest "Backslash escape in text" => sub {
-		$parser = $CLASS->new(pml => '[[somewhere|\**here]]');
+	subtest "escaping inside quote" => sub {
+		$parser = $CLASS->new(pml => '""This is \** then %%__|//%%""');
 		@tokens = $parser->get_all_tokens;
-		is get_tokens_string(\@tokens), 'LINK', 'link token ok';
-		is $tokens[0]->{href},	'somewhere', 	'link href ok';
-		is $tokens[0]->{text},	'**here', 		'link text ok';
+		is get_tokens_string(\@tokens), 'QUOTE', 'tokens ok';
+		is $tokens[0]->{body}, 'This is ** then __|//', 'body ok';
+	};
+
+	subtest "quote body region escape char literal" => sub {
+		$parser = $CLASS->new(pml => '""This is then %__\|//""');
+		@tokens = $parser->get_all_tokens;
+		is get_tokens_string(\@tokens), 'QUOTE', 'tokens ok';
+		is $tokens[0]->{body}, 'This is then %__|//', 'body ok';
+	};
+
+	subtest "quote body region escape char literal in escape" => sub {
+		$parser = $CLASS->new(pml => '""%%abc%def%%""');
+		@tokens = $parser->get_all_tokens;
+		is get_tokens_string(\@tokens), 'QUOTE', 'tokens ok';
+		is $tokens[0]->{body}, 'abc%def', 'body ok';
 	};
 };
 

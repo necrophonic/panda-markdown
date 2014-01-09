@@ -147,11 +147,19 @@ sub _get_next_token {
 		if ($state eq 'escape-region-start') {
 			if ($char eq $SYM_REGION_ESCAPE) {
 				$self->_switch_state('escape-region');
+				$self->_push_data_context('escape-region');
 				next;
 			}
 
 			# Anything else
-			$self->_append_to_string_token( $SYM_REGION_ESCAPE );
+			# Incomplete sequence so output the % symbol to the current
+			# data context.
+			if ($self->temporary_token_context) {
+				$self->temporary_token->{ $self->temporary_token_context } .= $SYM_REGION_ESCAPE;				
+			}
+			else {
+				$self->_append_to_string_token( $SYM_REGION_ESCAPE );
+			}
 			$self->_decrement_pointer;
 			$self->_switch_to_data_state;
 			next;
@@ -165,8 +173,17 @@ sub _get_next_token {
 				next;
 			}
 
+			if ($char eq 'EOF') {
+				$self->_raise_parse_error('unexpected end of data in escape region');
+			}
+
 			# Anything else
-			$self->_append_to_string_token( $char );
+			if ($self->temporary_token_context) {
+				$self->temporary_token->{ $self->temporary_token_context } .= $char;				
+			}
+			else {
+				$self->_append_to_string_token( $char );
+			}			
 			next;
 		}
 
@@ -174,13 +191,20 @@ sub _get_next_token {
 
 		if ($state eq 'escape-region-end') {
 			if ($char eq $SYM_REGION_ESCAPE) {
+				$self->_pop_data_context;
 				$self->_switch_to_data_state;
 				next;
 			}
 
 			# Anything else
-			$self->_append_to_string_token( $SYM_REGION_ESCAPE );
+			if ($self->temporary_token_context) {
+				$self->temporary_token->{ $self->temporary_token_context } .= $SYM_REGION_ESCAPE;				
+			}
+			else {
+				$self->_append_to_string_token( $SYM_REGION_ESCAPE );
+			}
 			$self->_decrement_pointer;			
+			$self->_switch_to_data_state;
 			next;	
 		}
 
@@ -856,8 +880,15 @@ sub _get_next_token {
 		# ---------------------------------------
 
 		if ($state eq 'quote-body') {
+			if ($char eq $SYM_ESCAPE) { $self->_push_data_context('escape'); next; }
+
 			if ($char eq 'EOF') {
 				$self->_raise_parse_error('unexpected end of file in quote');
+			}
+
+			if ($char eq $SYM_REGION_ESCAPE) {
+				$self->_switch_state('escape-region-start');
+				next;
 			}
 
 			if ($char eq $SYM_QUOTE_CONTEXT_SWITCH) {
@@ -879,6 +910,8 @@ sub _get_next_token {
 		# ---------------------------------------
 
 		if ($state eq 'quote-cite') {
+			if ($char eq $SYM_ESCAPE) { $self->_push_data_context('escape'); next; }
+
 			if ($char eq 'EOF') {
 				$self->_raise_parse_error('unexpected end of file in quote');
 			}
@@ -935,7 +968,7 @@ sub _emit_token {
 
 sub _raise_parse_error {
 	my ($self, $msg) = @_;
-	ERROR "!!Parse error [$msg]";
+	ERROR "!!Parse error [$msg] at char [".$self->pointer.']';
 	die "Encountered parse error [$msg]\n\n";
 }
 
