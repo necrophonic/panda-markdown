@@ -283,13 +283,13 @@ sub _close_paragraph {
 
 __END__
 
-=pod
+=encoding utf8
 
-=head1 Title
+=head1 NAME
 
 Text::CaffeinatedMarkup::HTMLFormatter - HTML formatter for the Caffeinated Markup Language
 
-=head1 Synopsis
+=head1 SYNOPSIS
 
   use Text::CaffeinatedMarkup::HTMLFormatter;
 
@@ -299,7 +299,7 @@ Text::CaffeinatedMarkup::HTMLFormatter - HTML formatter for the Caffeinated Mark
 
   my $html = $formatter->format($to_format);
 
-=head1 Description
+=head1 DESCRIPTION
 
 Provides formatting to HTML for the I<Caffeinated Markup Language>. Implemented using
 the L<Text::CaffeinatedMarkup::PullParser>.
@@ -307,7 +307,12 @@ the L<Text::CaffeinatedMarkup::PullParser>.
 For details on the syntax that B<CML> implements, please see the
 L<Github wiki|https://github.com/necrophonic/text-caffeinatedmarkup/wiki>.
 
-=head1 Methods
+=head1 CML VERSION
+
+This version of the Formatter implements the Caffeinated Markup Language spec
+version 0.12
+
+=head1 METHODS
 
 This module provides the following methods.
 
@@ -318,7 +323,7 @@ This module provides the following methods.
 Takes a raw string in I<Caffeinated Markup> format and returns a string of encoded HTML.
 
 
-=head1 Mappings
+=head1 MAPPINGS
 
 The various markup elements are mapped to HTML by this formatter as follows.
 
@@ -375,13 +380,12 @@ The various markup elements are mapped to HTML by this formatter as follows.
                           <div class="column">bar</div>
                           </div>
 
-
-=head1 See Also
-
-L<The Github wiki|https://github.com/necrophonic/text-caffeinatedmarkup/wiki>
-
-=head1 Author
+=head1 AUTHOR
 
 J Gregory <jgregory@cpan.org>
+
+=head1 SEE ALSO
+
+L<The Github wiki|https://github.com/necrophonic/text-caffeinatedmarkup/wiki>
 
 =cut

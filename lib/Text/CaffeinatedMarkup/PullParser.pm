@@ -3,7 +3,7 @@ package Text::CaffeinatedMarkup::PullParser;
 use strict;
 use warnings;
 
-our $VERSION = 0.02;
+our $VERSION = 0.03;
 
 use Log::Log4perl qw(:easy);
 Log::Log4perl->easy_init($OFF);
@@ -1075,13 +1075,13 @@ sub _create_token {
 
 __END__
 
-=pod
+=encoding utf8
 
-=head1 Title
+=head1 NAME
 
 Text::CaffeinatedMarkup::PullParser
 
-=head1 Synopsis
+=head1 SYNOPSIS
 
   use Text::CaffeinatedMarkup::PullParser;
 
@@ -1095,7 +1095,7 @@ Text::CaffeinatedMarkup::PullParser
 	 # ...
   }
 
-=head1 Description
+=head1 DESCRIPTION
 
 This module implements a I<Pull Parser> for C<The Caffeinated Markup Language>.
 For details on the syntax that B<CML> implements, please see the
@@ -1105,7 +1105,13 @@ This module isn't designed to be used directly in a client, but instead used by 
 I<formatter> such as L<Text::CaffeinatedMarkup::HTMLFormatter>.
 
 
-=head1 Methods
+=head1 CML VERSION
+
+This version of the Pull Parser implements the Caffeinated Markup Language spec
+version 0.12
+
+
+=head1 METHODS
 
 This module implements the following methods.
 
@@ -1129,13 +1135,12 @@ C<get_next_token> a couple of times and rhen call C<get_all_tokens>, then
 C<get_all_tokens> will return all the rest of the tokens I<from that point onwards> and
 not the entire document.
 
-
-=head1 See Also
-
-L<The Github wiki|https://github.com/necrophonic/text-caffeinatedmarkup/wiki>
-
-=head1 Author
+=head1 AUTHOR
 
 J Gregory <jgregory@cpan.org>
+
+=head1 SEE ALSO
+
+L<The Github wiki|https://github.com/necrophonic/text-caffeinatedmarkup/wiki>
 
 =cut
