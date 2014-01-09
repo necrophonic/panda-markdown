@@ -3,7 +3,7 @@ package Text::CaffeinatedMarkup::PullParser;
 use strict;
 use warnings;
 
-our $VERSION = 0.01;
+our $VERSION = 0.02;
 
 use Log::Log4perl qw(:easy);
 Log::Log4perl->easy_init($OFF);
@@ -16,6 +16,8 @@ has 'num_pml_chars'		=> (is=>'rw');
 
 has 'temporary_token'			=> (is=>'rw');
 has 'temporary_token_context'	=> (is=>'rw');
+
+has 'temporary_escaped_state'	=> (is=>'rw');
 
 has 'tokens'				=> (is=>'rw');
 has 'has_finished_parsing'	=> (is=>'rw');
@@ -44,13 +46,14 @@ my $SYM_NEWLINE			= "\n";
 my $SYM_SECTION_BREAK	= '~';
 my $SYM_HEADER 			= '#';
 
-my $SYM_ROW		= '=';
-my $SYM_COLUMN	= '|';
+my $SYM_ROW					 = '=';
+my $SYM_COLUMN				 = '|';
 
 my $SYM_QUOTE				 = '"';
 my $SYM_QUOTE_CONTEXT_SWITCH = '|';
 
-my $SYM_ESCAPE	= "\\";
+my $SYM_ESCAPE			 	 = "\\";
+my $SYM_REGION_ESCAPE 	  	 = '%';
 
 
 # ------------------------------------------------------------------------------
@@ -72,7 +75,6 @@ sub BUILD {
 	$self->state('newline');
 
 	$self->data_context([]);
-	#$self->data_context('data');
 
 	return;
 }
@@ -115,27 +117,114 @@ sub _get_next_token {
 
 		TRACE "  Read char [$char]";
 
+		# ---------------------------------------
+
+		# Check whether we've been asked to escape the next char.
+		# If so then output it to the current output buffer then
+		# pop the data context.
+		if ($self->_get_data_context eq 'escape') {
+			# Reset to previous context
+			$self->_pop_data_context;
+
+			if ($self->temporary_token_context) {
+				$self->temporary_token->{ $self->temporary_token_context } .= $char;
+				next;
+			}
+
+			# TODO append to current output buffer			
+
+			# If we're here then we're expecting to be in 'data' context
+			if ($self->_get_data_context ne 'data') {
+				$self->_raise_parse_error('Unexpected data context in escape');
+			}
+			
+			$self->_append_to_string_token( $char );
+			next;
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'escape-region-start') {
+			if ($char eq $SYM_REGION_ESCAPE) {
+				$self->_switch_state('escape-region');
+				$self->_push_data_context('escape-region');
+				next;
+			}
+
+			# Anything else
+			# Incomplete sequence so output the % symbol to the current
+			# data context.
+			if ($self->temporary_token_context) {
+				$self->temporary_token->{ $self->temporary_token_context } .= $SYM_REGION_ESCAPE;				
+			}
+			else {
+				$self->_append_to_string_token( $SYM_REGION_ESCAPE );
+			}
+			$self->_decrement_pointer;
+			$self->_switch_to_data_state;
+			next;
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'escape-region') {
+			if ($char eq $SYM_REGION_ESCAPE) {
+				$self->_switch_state('escape-region-end');
+				next;
+			}
+
+			if ($char eq 'EOF') {
+				$self->_raise_parse_error('unexpected end of data in escape region');
+			}
+
+			# Anything else
+			if ($self->temporary_token_context) {
+				$self->temporary_token->{ $self->temporary_token_context } .= $char;				
+			}
+			else {
+				$self->_append_to_string_token( $char );
+			}			
+			next;
+		}
+
+		# ---------------------------------------
+
+		if ($state eq 'escape-region-end') {
+			if ($char eq $SYM_REGION_ESCAPE) {
+				$self->_pop_data_context;
+				$self->_switch_to_data_state;
+				next;
+			}
+
+			# Anything else
+			if ($self->temporary_token_context) {
+				$self->temporary_token->{ $self->temporary_token_context } .= $SYM_REGION_ESCAPE;				
+			}
+			else {
+				$self->_append_to_string_token( $SYM_REGION_ESCAPE );
+			}
+			$self->_decrement_pointer;			
+			$self->_switch_to_data_state;
+			next;	
+		}
+
+		# ---------------------------------------
+
 		if ($state eq 'data') {
 
 			#$self->data_context('data'); # REMOVE
 
-			if ($char eq $SYM_STRONG)   { $self->_switch_state('strong');    next; }
-			if ($char eq $SYM_EMPHASIS) { $self->_switch_state('emphasis');  next; }
-			if ($char eq $SYM_UNDERLINE){ $self->_switch_state('underline'); next; }
-			if ($char eq $SYM_DELETE)	{ $self->_switch_state('delete');	 next; }
+			if ($char eq $SYM_STRONG)		 { $self->_switch_state('strong');    	next; }
+			if ($char eq $SYM_EMPHASIS) 	 { $self->_switch_state('emphasis');  	next; }
+			if ($char eq $SYM_UNDERLINE)	 { $self->_switch_state('underline'); 	next; }
+			if ($char eq $SYM_DELETE)		 { $self->_switch_state('delete');	 	next; }
+			if ($char eq $SYM_QUOTE) 		 { $self->_switch_state('quote-start'); next; }
+			if ($char eq $SYM_LINK_START) 	 { $self->_switch_state('link-start'); 	next; }
+			if ($char eq $SYM_IMAGE_START) 	 { $self->_switch_state('image-start'); next; }
+			if ($char eq $SYM_REGION_ESCAPE) { $self->_switch_state('escape-region-start'); next; }
 
-			if ($char eq $SYM_QUOTE) {
-				$self->_switch_state('quote-start');
-				next;
-			}
-
-			if ($char eq $SYM_LINK_START) {
-				$self->_switch_state('link-start');
-				next;
-			}
-
-			if ($char eq $SYM_IMAGE_START) {
-				$self->_switch_state('image-start');
+			if ($char eq $SYM_ESCAPE) {
+				$self->_push_data_context('escape');			
 				next;
 			}
 
@@ -287,6 +376,8 @@ sub _get_next_token {
 
 		if ($state eq 'link-href') {
 
+			if ($char eq $SYM_ESCAPE) { $self->_push_data_context('escape'); next; }
+
 			if ($char eq $SYM_LINK_CONTEXT_SWITCH) {
 				$self->temporary_token_context('text');
 				$self->_switch_state('link-text');
@@ -312,6 +403,8 @@ sub _get_next_token {
 		# ---------------------------------------
 
 		if ($state eq 'link-text') {
+
+			if ($char eq $SYM_ESCAPE) { $self->_push_data_context('escape'); next; }
 
 			if ($char eq $SYM_LINK_END) {
 				$self->_switch_state('link-end');
@@ -388,8 +481,15 @@ sub _get_next_token {
 
 		if ($state eq 'image-src') {
 
-			if ($char eq $SYM_IMAGE_CONTEXT_SWITCH) { $self->_switch_state('image-options'); next }
-			if ($char eq $SYM_IMAGE_END) 			{ $self->_switch_state('image-end');	 next }
+			if ($char eq $SYM_ESCAPE) { $self->_push_data_context('escape'); next; }
+
+			if ($char eq $SYM_IMAGE_CONTEXT_SWITCH) {
+				$self->_switch_state('image-options');
+				$self->temporary_token_context('options');
+				next;
+			}
+
+			if ($char eq $SYM_IMAGE_END){ $self->_switch_state('image-end'); next; }
 			
 			if ($char eq 'EOF') {
 				$self->_raise_parse_error("Unexpected 'EOF' while parsing image src");
@@ -409,6 +509,8 @@ sub _get_next_token {
 		# ---------------------------------------
 
 		if ($state eq 'image-options') {
+
+			if ($char eq $SYM_ESCAPE) { $self->_push_data_context('escape'); next; }
 
 			if ($char eq $SYM_IMAGE_END) {
 				$self->_switch_state('image-end');
@@ -778,8 +880,15 @@ sub _get_next_token {
 		# ---------------------------------------
 
 		if ($state eq 'quote-body') {
+			if ($char eq $SYM_ESCAPE) { $self->_push_data_context('escape'); next; }
+
 			if ($char eq 'EOF') {
 				$self->_raise_parse_error('unexpected end of file in quote');
+			}
+
+			if ($char eq $SYM_REGION_ESCAPE) {
+				$self->_switch_state('escape-region-start');
+				next;
 			}
 
 			if ($char eq $SYM_QUOTE_CONTEXT_SWITCH) {
@@ -801,6 +910,8 @@ sub _get_next_token {
 		# ---------------------------------------
 
 		if ($state eq 'quote-cite') {
+			if ($char eq $SYM_ESCAPE) { $self->_push_data_context('escape'); next; }
+
 			if ($char eq 'EOF') {
 				$self->_raise_parse_error('unexpected end of file in quote');
 			}
@@ -857,7 +968,7 @@ sub _emit_token {
 
 sub _raise_parse_error {
 	my ($self, $msg) = @_;
-	ERROR "!!Parse error [$msg]";
+	ERROR "!!Parse error [$msg] at char [".$self->pointer.']';
 	die "Encountered parse error [$msg]\n\n";
 }
 

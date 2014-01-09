@@ -7,8 +7,8 @@ use Config;
 use ExtUtils::MakeMaker;
 
 WriteMakefile(
-	NAME		=> 'Caffeinated_Markup_Language',
-	VERSION		=> '0.11.1',
+	NAME		=> 'Text::CaffeinatedMarkup',
+	VERSION		=> '0.12',
 	ABSTRACT	=> 'Panda blog orientated markup',
 	AUTHOR		=> 'J Gregory <jgregory@cpan.org>',
 	LICENSE		=> 'artistic_2',
@@ -16,15 +16,23 @@ WriteMakefile(
 		'Moo'	   	   => '1.003001',
 		'boolean'  	   => '0.30',
 		'Readonly' 	   => '1.03',
-		'HTML::Escape' 	   => '1.08',
-		'Log::Log4perl'	   => '1.42',
+		'HTML::Escape' => '1.08',
+		'Log::Log4perl'=> '1.42',
 	},
 	BUILD_REQUIRES => {
 		"Test::More" 	  => '0.99',
 		"Test::Exception" => '0.32'
 	},
-	test 			=> {
-		TESTS	=> 't/*.t'
+	test  => { TESTS    => 't/*.t t/*/*.t' },	
+	META_MERGE	=> {
+		requires  => {perl => '5.010001'},
+		resources => {
+			homepage	=> 'http://necrophonic.github.io/text-caffeinatedmarkup',
+			license     => 'http://www.opensource.org/licenses/artistic-license-2.0',
+			repository	=> 'http://github.com/necrophonic/text-caffeinatedmarkup',
+			bugtracker	=> 'http://github.com/necrophonic/text-caffeinatedmarkup/issues'
+		},
+		no_index => {directory => ['t']}
 	},
-	'dist'          => { COMPRESS => "gzip -9", SUFFIX => "gz" },
+	dist => { COMPRESS => "gzip -9", SUFFIX => "gz" },
 );

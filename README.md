@@ -3,7 +3,7 @@ Caffeinated Markup Language
 
 [![Build Status](https://travis-ci.org/necrophonic/text-caffeinatedmarkup.png?branch=master)](https://travis-ci.org/necrophonic/text-caffeinatedmarkup)
 
-**Current Version 0.11**
+**Current Version 0.12**
 
 The Caffeinated Markup Langauge is an attempt to create a simple yet rich markup language. It was originally created for blog postings on the [Caffeinated Panda Creations website](http://www.caffeinatedpandacreations.co.uk)
 

@@ -1,6 +1,17 @@
-0.11.1 2014-01-4
+0.12 2014-01-09
+	- Add support for escaping syntax (backslash and region) in pull parser
+	- Escape should work in:
+	  - Data context (outside any block)
+	  - Image blocks
+	  - Hyperlink blocks
+	  - Headers
+	  - Quotes
+	  - Section breaks
+
+
+0.11.1 2014-01-04
 	- Add initial FAQ pod
-	
+
 
 0.11 2014-01-02
 	- Repackage as Text::CaffeinatedMarkup::
