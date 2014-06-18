@@ -18,6 +18,7 @@ WriteMakefile(
 		'Readonly' 	   => '1.03',
 		'HTML::Escape' => '1.08',
 		'Log::Log4perl'=> '1.42',
+		'Log::Declare' => '0.03'
 	},
 	BUILD_REQUIRES => {
 		"Test::More" 	  => '0.99',
