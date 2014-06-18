@@ -20,12 +20,14 @@ package Test {
 	};
 
 
-	sub handle_text 	{$all->($_[0])};
-	sub handle_emphasis {$all->($_[0])};
-	sub handle_link 	{$all->($_[0])};
-	sub handle_image 	{$all->($_[0])};
-	sub handle_divider 	{$all->($_[0])};
-	sub handle_header 	{$all->($_[0])};
+	sub handle_text 		  {$all->($_[0])};
+	sub handle_emphasis 	  {$all->($_[0])};
+	sub handle_link 		  {$all->($_[0])};
+	sub handle_image 		  {$all->($_[0])};
+	sub handle_divider 		  {$all->($_[0])};
+	sub handle_header 		  {$all->($_[0])};
+	sub handle_linebreak      {$all->($_[0])};
+	sub handle_paragraphbreak {$all->($_[0])};
 
 	
 };
@@ -33,7 +35,7 @@ package Test {
 package main;
 
 
-plan tests => 12;
+plan tests => 13;
 
 	use_ok 'Text::CaffeinatedMarkup::PullParser';
 	can_ok 'Text::CaffeinatedMarkup::PullParser', qw|tokenize|;	
@@ -179,7 +181,7 @@ plan tests => 12;
 		plan tests => 4;
 
 		my $cml_1 = '# Header';
-		my $pp  = Test->new( cml=>$cml_1 );
+		my $pp  = Test->new();
 		$pp->tokenize($cml_1);
 		test_expected_tokens_list( $pp->tokens, [qw|header|] );
 		is $pp->tokens->[0]->level, 1, 'level is correct (1)';		
@@ -189,6 +191,27 @@ plan tests => 12;
 		$pp->tokenize($cml_2);
 		test_expected_tokens_list( $pp->tokens, [qw|header|] );
 		is $pp->tokens->[0]->level, 3, 'level is correct (3)';
+	};
+
+	subtest 'Parse #10 - breaks' => sub {
+		plan tests => 5;
+
+		my $cml_1 = "Text\nText after";
+		my $pp    = Test->new();
+		$pp->tokenize($cml_1);
+		test_expected_tokens_list( $pp->tokens, [qw|text line_break text|] );
+		is $pp->tokens->[2]->content, 'Text after', 'text ok';
+
+		my $cml_2 = "Text\n\nText after";
+		my $pp    = Test->new();
+		$pp->tokenize($cml_2);
+		test_expected_tokens_list( $pp->tokens, [qw|text paragraph_break text|] );
+
+		my $cml_3 = "Text\n\n\n\n\nMore Text after";
+		my $pp    = Test->new();
+		$pp->tokenize($cml_3);
+		test_expected_tokens_list( $pp->tokens, [qw|text paragraph_break text|] );
+		is $pp->tokens->[2]->content, 'More Text after', 'text ok';
 	};
 
 
@@ -206,7 +229,11 @@ sub test_expected_tokens_list {
 		plan tests => scalar @$tokens_expected;
 
 		for (my $i=0;$i<@$tokens_expected;$i++)	{
-			my $expected_class = 'Text::CaffeinatedMarkup::PullParser::'.ucfirst($tokens_expected->[$i]).'Token';
+
+			my $camel_token = ucfirst $tokens_expected->[$i];
+			   $camel_token =~ s/_(\w)/\u$1/g;
+
+			my $expected_class = 'Text::CaffeinatedMarkup::PullParser::'.$camel_token.'Token';
 			is ref $tokens_got->[$i], $expected_class, ref($tokens_got->[$i]) ." == $expected_class";
 		}
 	};

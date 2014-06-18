@@ -6,12 +6,15 @@ use Moo;
 
 use Log::Declare;
 
+use Text::CaffeinatedMarkup::PullParser::ParagraphBreakToken;
+use Text::CaffeinatedMarkup::PullParser::LineBreakToken;
 use Text::CaffeinatedMarkup::PullParser::EmphasisToken;
 use Text::CaffeinatedMarkup::PullParser::DividerToken;
 use Text::CaffeinatedMarkup::PullParser::HeaderToken;
 use Text::CaffeinatedMarkup::PullParser::ImageToken;
 use Text::CaffeinatedMarkup::PullParser::TextToken;
 use Text::CaffeinatedMarkup::PullParser::LinkToken;
+
 
 # To implement
 # * char escape
@@ -161,6 +164,14 @@ sub tokenize {
 				next;
 			}
 
+			if ($char eq "\n") {
+				$self->_discard_token;
+				$self->_create_and_emit_token('paragraph_break');
+				$self->_pop_state;
+				$self->_consume_until_not("\n");
+				next;				
+			}
+
 			if ($char eq '#') {				
 				my $consumed = $self->_consume_until(' ');
 				$self->_create_token('header');
@@ -253,6 +264,12 @@ sub tokenize {
 				}
 				next;
 			}
+
+			if ($char eq "\n") {
+				$self->_create_token('line_break');
+				$self->_push_state('newline');
+				next;
+			}
 			
 			if ($char =~ /[\*\/_]/) {
 				if ($self->_peek_match($char)) {
@@ -263,6 +280,10 @@ sub tokenize {
 					$self->token->append_content($char);
 				}
 				next;
+			}
+
+			if ($char eq "\n") {
+				$self->_
 			}
 
 			if ($char eq '[') {
@@ -429,19 +450,21 @@ sub _create_token {
 	
 	my $t;
 	$_ = $requested;
-	/text/   && do { $t = Text::CaffeinatedMarkup::PullParser::TextToken->new };
-	/\*/     && do { $t = Text::CaffeinatedMarkup::PullParser::EmphasisToken->new('strong') };
-	/\//     && do { $t = Text::CaffeinatedMarkup::PullParser::EmphasisToken->new('emphasis') };
-	/_/      && do { $t = Text::CaffeinatedMarkup::PullParser::EmphasisToken->new('underline') };
-	/-/      && do { $t = Text::CaffeinatedMarkup::PullParser::EmphasisToken->new('delete') };
-	/\+/     && do { $t = Text::CaffeinatedMarkup::PullParser::EmphasisToken->new('insert') };
-	/link/   && do { $t = Text::CaffeinatedMarkup::PullParser::LinkToken->new };
-	/image/  && do { $t = Text::CaffeinatedMarkup::PullParser::ImageToken->new };
-	/div/    && do { $t = Text::CaffeinatedMarkup::PullParser::DividerToken->new };
-	/header/ && do { $t = Text::CaffeinatedMarkup::PullParser::HeaderToken->new };
+	/^text$/       && do { $t = Text::CaffeinatedMarkup::PullParser::TextToken->new };
+	/^\*$/         && do { $t = Text::CaffeinatedMarkup::PullParser::EmphasisToken->new('strong') };
+	/^\/$/         && do { $t = Text::CaffeinatedMarkup::PullParser::EmphasisToken->new('emphasis') };
+	/^_$/          && do { $t = Text::CaffeinatedMarkup::PullParser::EmphasisToken->new('underline') };
+	/^-$/          && do { $t = Text::CaffeinatedMarkup::PullParser::EmphasisToken->new('delete') };
+	/^\+$/         && do { $t = Text::CaffeinatedMarkup::PullParser::EmphasisToken->new('insert') };
+	/^link$/       && do { $t = Text::CaffeinatedMarkup::PullParser::LinkToken->new };
+	/^image$/      && do { $t = Text::CaffeinatedMarkup::PullParser::ImageToken->new };
+	/^div$/        && do { $t = Text::CaffeinatedMarkup::PullParser::DividerToken->new };
+	/^header$/     && do { $t = Text::CaffeinatedMarkup::PullParser::HeaderToken->new };
+	/^line_break$/ && do { $t = Text::CaffeinatedMarkup::PullParser::LineBreakToken->new };
+	/^paragraph_break$/ && do { $t = Text::CaffeinatedMarkup::PullParser::ParagraphBreakToken->new };
 
 	if ($t) {
-		trace "Created new token [%s]", $requested [TOKENIZE];
+		trace "Created new token [%s] [%s]", $requested, r:$t [TOKENIZE];
 		return $self->_set_token( $t );
 	}
 
@@ -459,6 +482,14 @@ sub _create_and_emit_token {
 
 # ------------------------------------------------------------------------------
 
+sub _discard_token {
+	my ($self) = @_;
+	$self->_set_token(undef);
+	return;
+}
+
+# ------------------------------------------------------------------------------
+
 # Consume any number of chars until the specified one is reached.
 sub _consume_until {
 	my ($self, $delimit) = @_;
@@ -466,6 +497,23 @@ sub _consume_until {
 	debug "Consume until [%s]", $delimit [TOKENIZE CONSUME_UNTIL];
 	my $consumed = 1;
 	while($char && $char ne $delimit) {
+		$consumed++;		
+		trace "... ignore [%s]", $char [TOKENIZE CONSUME_UNTIL];
+		$char = $self->chars->[$self->_inc_pointer];
+	}
+	trace "... consumed ($consumed)!" [TOKENIZE CONSUME_UNTIL];	
+	$self->_dec_pointer;
+	return $consumed;
+}
+
+# ------------------------------------------------------------------------------
+
+sub _consume_until_not {
+	my ($self, $delimit) = @_;
+	my $char = $self->chars->[$self->_inc_pointer];
+	debug "Consume until [%s]", $delimit [TOKENIZE CONSUME_UNTIL];
+	my $consumed = 1;
+	while($char && $char eq $delimit) {
 		$consumed++;		
 		trace "... ignore [%s]", $char [TOKENIZE CONSUME_UNTIL];
 		$char = $self->chars->[$self->_inc_pointer];
