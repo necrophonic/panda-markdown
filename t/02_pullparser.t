@@ -7,7 +7,7 @@ use Log::Declare;
 use Test::More;
 use Test::Exception;
 
-package Test {
+package Test;
 	use Moo;
 	use Log::Declare;
 	extends 'Text::CaffeinatedMarkup::PullParser';
@@ -30,8 +30,6 @@ package Test {
 	sub handle_paragraphbreak {$all->($_[0])};
 
 	
-};
-
 package main;
 
 
@@ -203,12 +201,12 @@ plan tests => 13;
 		is $pp->tokens->[2]->content, 'Text after', 'text ok';
 
 		my $cml_2 = "Text\n\nText after";
-		my $pp    = Test->new();
+		$pp    = Test->new();
 		$pp->tokenize($cml_2);
 		test_expected_tokens_list( $pp->tokens, [qw|text paragraph_break text|] );
 
 		my $cml_3 = "Text\n\n\n\n\nMore Text after";
-		my $pp    = Test->new();
+		$pp    = Test->new();
 		$pp->tokenize($cml_3);
 		test_expected_tokens_list( $pp->tokens, [qw|text paragraph_break text|] );
 		is $pp->tokens->[2]->content, 'More Text after', 'text ok';
