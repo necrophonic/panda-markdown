@@ -28,12 +28,10 @@ use Text::CaffeinatedMarkup::PullParser::LinkToken;
 # * inline code
 # * rows and columns
 
-has 'state_stack' => ( is => 'rwp', default => sub {['newline','none']} );
+has 'state_stack' => ( is => 'rwp' );
 has 'chars'   => ( is => 'rwp' );
 has 'pointer' => ( is => 'rwp' );
 has 'token'   => ( is => 'rwp' );
-
-has 'output'  => ( is => 'rw' );
 
 # ------------------------------------------------------------------------------
 
@@ -66,6 +64,8 @@ sub parse_end {
 
 sub tokenize {
 	my ($self, $cml) = @_;	
+
+    trace "Tokenize [$cml]" [TOKENIZE];
 
 	# init
 	$self->_set_chars([split//,$cml]);
@@ -176,6 +176,7 @@ sub tokenize {
 				my $consumed = $self->_consume_until(' ');
 				$self->_create_token('header');
 				$self->token->level($consumed);
+                trace "Set header level to [%s]",$consumed [TOKENIZE];
 				$self->_inc_pointer;
 				$self->_switch_state('header');
 				next;
@@ -433,7 +434,7 @@ sub tokenize {
 	}
 	$self->_emit_token if $self->token;
 	$self->parse_end;
-	return;
+	return $self;
 }
 
 # ------------------------------------------------------------------------------
