@@ -29,16 +29,137 @@ package Test;
 	sub handle_linebreak      {$all->($_[0])};
 	sub handle_paragraphbreak {$all->($_[0])};
 
+    before 'tokenize' => sub {
+        my ($self) = @_;
+        $self->tokens([]);
+    };
 	
 package main;
 
-
-plan tests => 13;
+#plan tests => 10;
 
 	use_ok 'Text::CaffeinatedMarkup::PullParser';
 	can_ok 'Text::CaffeinatedMarkup::PullParser', qw|tokenize|;	
+
+    my $pp = Test->new;
+
+    test_emphasis();
+    test_hyperlinks();
+    test_images();
+    test_headers();
+    test_escaping();
+    test_dividers();
+    test_breaks();
+
+    # Not public interface things, but stuff to verify
+    # that the internals do what they should!
+    test_peek();
 	
-	subtest 'Peek' => sub {
+
+
+done_testing;
+
+# -----------------------------------------------------------------------------
+
+sub test_emphasis {
+    subtest 'emphasis' => sub {
+        plan tests => 2;
+
+    	subtest 'Simple mixed emphasis' => sub {
+    		plan tests => 5;
+    		$pp->tokenize('The **cat** sat __on__ the //mat//');
+    		test_expected_tokens_list(
+    			$pp->tokens,
+    			[qw|text emphasis text emphasis text emphasis text emphasis text emphasis text emphasis|]
+    		);
+    		# Check the content of some tokens
+    		is $pp->tokens->[0]->content, 'The ';
+    		is $pp->tokens->[1]->type,    'strong';
+    		is $pp->tokens->[5]->type,    'underline';
+    		is $pp->tokens->[9]->type,    'emphasis';
+    	};
+    
+    	subtest 'Emphasis at start of parse' => sub {
+    		plan tests => 4;
+            $pp->tokenize('**Yay!**');
+    		test_expected_tokens_list( $pp->tokens, [qw|emphasis text emphasis|] );
+    		is $pp->tokens->[1]->content, 'Yay!';
+    		is $pp->tokens->[0]->type,    'strong';
+    		is $pp->tokens->[2]->type,    'strong';
+    	};
+    };
+}
+
+# ------------------------------------------------------------------------------
+
+sub test_hyperlinks {
+    subtest 'test hyperlinks' => sub {
+        plan tests => 3;
+
+     	subtest 'Hyperlink with alt text' => sub {
+    		plan tests => 3;
+    		$pp->tokenize('Go here: [[http://www.example.com|example site]]');
+    		test_expected_tokens_list( $pp->tokens, [qw|text link|] );
+    		is $pp->tokens->[1]->href, 'http://www.example.com', 'href is correct';
+    		is $pp->tokens->[1]->text, 'example site', 'text is correct';
+    	};
+    
+    	subtest 'Hyperlink with no alt text' => sub {
+    		plan tests => 3;
+    		$pp->tokenize('Go here: [[http://www.example.com]]');
+    		test_expected_tokens_list( $pp->tokens, [qw|text link|] );
+    		is $pp->tokens->[1]->href, 'http://www.example.com', 'href is correct';
+    		is $pp->tokens->[1]->text, '', 'text is correct';
+    	};   
+
+        subtest 'Hyperlink at start of parse' => sub {
+    		plan tests => 3;
+    		$pp->tokenize('[[http://www.example.com]]');
+    		test_expected_tokens_list( $pp->tokens, [qw|link|] );
+    		is $pp->tokens->[0]->href, 'http://www.example.com', 'href is correct';
+    		is $pp->tokens->[0]->text, '', 'text is correct';
+    	};   
+    };
+}
+
+# ------------------------------------------------------------------------------
+
+sub test_images {
+    subtest 'test images' => sub {
+        plan tests => 3;
+
+	    subtest 'Image with options' => sub {
+	    	plan tests => 3;
+	    	$pp->tokenize('{{images/cat.jpg|>>,W100,H50}}');
+	    	test_expected_tokens_list( $pp->tokens, [qw|image|] );
+	    	is $pp->tokens->[0]->src, 'images/cat.jpg', 'src is correct';
+	    	is $pp->tokens->[0]->options, '>>,W100,H50', 'options is correct';
+	    };
+
+	    subtest 'Image without options' => sub {
+	    	plan tests => 3;
+	    	$pp->tokenize('{{images/cat.jpg}}');
+	    	test_expected_tokens_list( $pp->tokens, [qw|image|] );
+	    	is $pp->tokens->[0]->src, 'images/cat.jpg', 'src is correct';
+	    	is $pp->tokens->[0]->options, '', 'options is correct';
+	    };
+
+        subtest 'Image in text' => sub {
+	    	plan tests => 3;
+	    	$pp->tokenize('A cat {{images/cat.jpg}} That was nice');
+	    	test_expected_tokens_list( $pp->tokens, [qw|text image text|] );
+	    	is $pp->tokens->[1]->src, 'images/cat.jpg', 'src is correct';
+	    	is $pp->tokens->[1]->options, '', 'options is correct';
+	    };
+    };
+}
+
+# ------------------------------------------------------------------------------
+
+sub test_peek {
+    subtest 'Peek' => sub {
+        plan tests => 3;
+
 		dies_ok {
 			my $pp = Text::CaffeinatedMarkup::PullParser->new(cml=>'');
 			$pp->_set_chars([split//,'abc']);
@@ -53,170 +174,65 @@ plan tests => 13;
 			is $pp->_peek, 'c', 'peek at "c"';
 		} 'live ok';
 	};
+}
 
+# ------------------------------------------------------------------------------
 
-	subtest 'Parse #1' => sub {
-		plan tests => 5;
-		my $cml = 'The **cat** sat __on__ the //mat//';
-		my $pp  = Test->new( );
-		$pp->tokenize($cml);
-
-		test_expected_tokens_list(
-			$pp->tokens,
-			[qw|text emphasis text emphasis text emphasis text emphasis text emphasis text emphasis|]
-		);
-
-		# Check the content of some tokens
-		is $pp->tokens->[0]->content, 'The ';
-		is $pp->tokens->[1]->type, 'strong';
-		is $pp->tokens->[5]->type, 'underline';
-		is $pp->tokens->[9]->type, 'emphasis';
-	};
-
-	subtest 'Parse #2' => sub {
+sub test_headers {
+	subtest 'test headers' => sub {
 		plan tests => 4;
-
-		my $cml = '**Yay!**';
-		my $pp  = Test->new( );
-		$pp->tokenize($cml);
-
-		test_expected_tokens_list(
-			$pp->tokens,
-			[qw|emphasis text emphasis|]
-		);
-		is $pp->tokens->[1]->content, 'Yay!';
-		is $pp->tokens->[0]->type, 'strong';
-		is $pp->tokens->[2]->type, 'strong';
-
-	};
-
-	subtest 'Parse #3' => sub {
-		plan tests => 3;
-
-		my $cml = 'Go here: [[http://www.example.com|example site]]';
-		my $pp  = Test->new( );
-		$pp->tokenize($cml);
-
-		test_expected_tokens_list(
-			$pp->tokens,
-			[qw|text link|]
-		);
-		my $token = $pp->tokens->[1];
-		is $token->href, 'http://www.example.com', 'href is correct';
-		is $token->text, 'example site', 'text is correct';
-	};
-
-	subtest 'Parse #4' => sub {
-		plan tests => 3;
-
-		my $cml = 'Go here: [[http://www.example.com]]';
-		my $pp  = Test->new( );
-		$pp->tokenize($cml);
-
-		test_expected_tokens_list(
-			$pp->tokens,
-			[qw|text link|]
-		);
-		my $token = $pp->tokens->[1];
-		is $token->href, 'http://www.example.com', 'href is correct';
-		is $token->text, '', 'text is correct';
-	};
-
-	subtest 'Parse #5' => sub {
-		plan tests => 3;
-
-		my $cml = '{{images/cat.jpg|>>,W100,H50}}';
-		my $pp  = Test->new( );
-		$pp->tokenize($cml);
-
-		test_expected_tokens_list(
-			$pp->tokens,
-			[qw|image|]
-		);
-		my $token = $pp->tokens->[0];
-		is $token->src, 'images/cat.jpg', 'src is correct';
-		is $token->options, '>>,W100,H50', 'options is correct';
-	};
-
-	subtest 'Parse #6' => sub {
-		plan tests => 3;
-
-		my $cml = '{{images/cat.jpg}}';
-		my $pp  = Test->new( );
-		$pp->tokenize($cml);
-
-		test_expected_tokens_list( $pp->tokens, [qw|image|] );
-
-		my $token = $pp->tokens->[0];
-		is $token->src, 'images/cat.jpg', 'src is correct';
-		is $token->options, '', 'options is correct';
-	};
-
-	subtest 'Parse #7' => sub {
-		plan tests => 1;
-
-		my $cml = "~~ABC\n";
-		my $pp  = Test->new( );
-		$pp->tokenize($cml);
-
-		test_expected_tokens_list( $pp->tokens, [qw|divider|] );
-	};
-
-	subtest 'Parse #8' => sub {
-		plan tests => 3;
-
-		my $cml = '\**cat \***dog**';
-		my $pp  = Test->new( );
-		$pp->tokenize($cml);
-
-		test_expected_tokens_list( $pp->tokens, [qw|text emphasis text emphasis|] );
-
-		is $pp->tokens->[0]->content, '**cat *', 'content is correct';
-		is $pp->tokens->[2]->content, 'dog',    'content is correct';
-	};
-
-	subtest 'Parse #9' => sub {
-		plan tests => 4;
-
-		my $cml_1 = '# Header';
-		my $pp  = Test->new();
-		$pp->tokenize($cml_1);
+		$pp->tokenize('# Header');
 		test_expected_tokens_list( $pp->tokens, [qw|header|] );
 		is $pp->tokens->[0]->level, 1, 'level is correct (1)';		
 
-		my $cml_2 = '### Header';		
-		$pp  = Test->new();
-		$pp->tokenize($cml_2);
+		$pp->tokenize('### Header');
 		test_expected_tokens_list( $pp->tokens, [qw|header|] );
 		is $pp->tokens->[0]->level, 3, 'level is correct (3)';
 	};
+}
 
-	subtest 'Parse #10 - breaks' => sub {
+# ------------------------------------------------------------------------------
+
+sub test_escaping {
+    subtest 'test escaping' => sub {
+		plan tests => 3;
+		$pp->tokenize('\**cat \***dog**');
+		test_expected_tokens_list( $pp->tokens, [qw|text emphasis text emphasis|] );
+		is $pp->tokens->[0]->content, '**cat *', 'content is correct';
+		is $pp->tokens->[2]->content, 'dog',    'content is correct';
+	};
+}
+
+# ------------------------------------------------------------------------------
+
+sub test_dividers {
+    subtest 'test dividers' => sub {
+		plan tests => 1;
+		$pp->tokenize("~~");
+		test_expected_tokens_list( $pp->tokens, [qw|divider|] );
+	};
+}
+
+# ------------------------------------------------------------------------------
+
+sub test_breaks {
+    subtest 'test breaks' => sub {
 		plan tests => 5;
 
-		my $cml_1 = "Text\nText after";
-		my $pp    = Test->new();
-		$pp->tokenize($cml_1);
+		$pp->tokenize("Text\nText after");
 		test_expected_tokens_list( $pp->tokens, [qw|text line_break text|] );
 		is $pp->tokens->[2]->content, 'Text after', 'text ok';
 
-		my $cml_2 = "Text\n\nText after";
-		$pp    = Test->new();
-		$pp->tokenize($cml_2);
+		$pp->tokenize("Text\n\nText after");
 		test_expected_tokens_list( $pp->tokens, [qw|text paragraph_break text|] );
 
-		my $cml_3 = "Text\n\n\n\n\nMore Text after";
-		$pp    = Test->new();
-		$pp->tokenize($cml_3);
+		$pp->tokenize("Text\n\n\n\n\nMore Text after");
 		test_expected_tokens_list( $pp->tokens, [qw|text paragraph_break text|] );
 		is $pp->tokens->[2]->content, 'More Text after', 'text ok';
 	};
+}
 
-
-
-done_testing;
-
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 # Test the classes of returned tokens - doesn't test
 # the content of any of the tokens.
