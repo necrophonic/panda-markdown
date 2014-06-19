@@ -36,7 +36,7 @@ package Test;
 	
 package main;
 
-#plan tests => 10;
+plan tests => 10;
 
 	use_ok 'Text::CaffeinatedMarkup::PullParser';
 	can_ok 'Text::CaffeinatedMarkup::PullParser', qw|tokenize|;	
