@@ -28,6 +28,10 @@ package Test;
 	sub handle_header 		  {$all->($_[0])};
 	sub handle_linebreak      {$all->($_[0])};
 	sub handle_paragraphbreak {$all->($_[0])};
+	sub handle_rowstart		  {$all->($_[0])};
+	sub handle_rowend		  {$all->($_[0])};	
+	sub handle_columndivider  {$all->($_[0])};
+	sub handle_column		  {$all->($_[0])};
 
     before 'tokenize' => sub {
         my ($self) = @_;
@@ -36,7 +40,7 @@ package Test;
 	
 package main;
 
-plan tests => 10;
+plan tests => 11;
 
 	use_ok 'Text::CaffeinatedMarkup::PullParser';
 	can_ok 'Text::CaffeinatedMarkup::PullParser', qw|tokenize|;	
@@ -50,6 +54,7 @@ plan tests => 10;
     test_escaping();
     test_dividers();
     test_breaks();
+    test_rows_and_columns();
 
     # Not public interface things, but stuff to verify
     # that the internals do what they should!
@@ -207,9 +212,19 @@ sub test_escaping {
 
 sub test_dividers {
     subtest 'test dividers' => sub {
-		plan tests => 1;
-		$pp->tokenize("~~");
-		test_expected_tokens_list( $pp->tokens, [qw|divider|] );
+    	plan tests => 2;
+    	subtest 'normal divider' => sub {
+			plan tests => 1;
+			$pp->tokenize("~~");
+			test_expected_tokens_list( $pp->tokens, [qw|divider|] );
+		};
+
+		subtest 'incomplete sequence' => sub {
+			plan tests => 2;
+			$pp->tokenize("~something");
+			test_expected_tokens_list( $pp->tokens, [qw|text|] );
+			is $pp->tokens->[0]->content, '~something', 'content is correct';
+		};
 	};
 }
 
@@ -229,6 +244,30 @@ sub test_breaks {
 		$pp->tokenize("Text\n\n\n\n\nMore Text after");
 		test_expected_tokens_list( $pp->tokens, [qw|text paragraph_break text|] );
 		is $pp->tokens->[2]->content, 'More Text after', 'text ok';
+	};
+}
+
+# ------------------------------------------------------------------------------
+
+sub test_rows_and_columns {
+	subtest 'test rows and columns' => sub {
+
+		my $cml = <<EOT
+Before row
+==
+First column||Second column
+||Third Column\\||Not a new column
+==
+After row
+EOT
+;
+		$pp->tokenize($cml);
+
+		error "%s",d:$pp->tokens;
+
+		test_expected_tokens_list(
+			$pp->tokens, [qw|text row_start text column_divider text column_divider text row_end text line_break|]
+		);
 	};
 }
 

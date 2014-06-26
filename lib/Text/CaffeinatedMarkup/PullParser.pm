@@ -2,6 +2,7 @@ package Text::CaffeinatedMarkup::PullParser;
 
 use strict;
 use v5.10;
+use boolean;
 use Moo;
 
 use Log::Declare;
@@ -15,12 +16,11 @@ use Text::CaffeinatedMarkup::PullParser::ImageToken;
 use Text::CaffeinatedMarkup::PullParser::TextToken;
 use Text::CaffeinatedMarkup::PullParser::LinkToken;
 
+# TODO check eof error states
 
 # To implement
-# * char escape
 # * block escape
 # * block quote
-# * line/paragraph breaks
 # * spacers
 # * list
 # * table
@@ -32,6 +32,8 @@ has 'state_stack' => ( is => 'rwp' );
 has 'chars'   => ( is => 'rwp' );
 has 'pointer' => ( is => 'rwp' );
 has 'token'   => ( is => 'rwp' );
+
+has 'in_row_context' => ( is => 'rwp' );
 
 # ------------------------------------------------------------------------------
 
@@ -72,6 +74,7 @@ sub tokenize {
 	$self->_set_pointer(-1);
 	$self->_set_token(undef);
 	$self->_set_state_stack(['newline','none']);
+	$self->_set_in_row_context(true);
 
 	while ( $self->pointer < $#{$self->chars} ) {
 
@@ -162,7 +165,7 @@ sub tokenize {
 					$self->_inc_pointer;					
 				}
 				next;
-			}
+			}		
 
 			if ($char eq "\n") {
 				$self->_discard_token;
@@ -182,19 +185,7 @@ sub tokenize {
 				next;
 			}
 
-			# if ($char eq '=') {
-			# 	if ($self->_peek_match($char)) {
-			# 		$self->_push_state('row');
-			# 		$self->_create_and_emit_token('row');
-			# 	}
-			# 	else {
-			# 		$self->_switch_state('text');
-			# 		$self->_create_token('text');
-			# 		$self->token->append_content($char);
-			# 	}				
-			# 	next;
-			# }
-
+			
 			if ($char =~ /[\*\/_]/) {
 				if ($self->_peek_match($char)) {										
 					$self->_create_and_emit_token($char);					
@@ -209,10 +200,15 @@ sub tokenize {
 			}
 
 			if ($char eq '~') {
-				if ($self->_peek($char)) {
+				if ($self->_peek_match($char)) {
 					$self->_create_and_emit_token('div');
 					$self->_consume_until("\n");
 					$self->_inc_pointer; # Skip the newline!					
+				}
+				else {
+					$self->_switch_state('text');
+					$self->_create_token('text');
+					$self->token->append_content($char);
 				}
 				next;
 			}
@@ -252,6 +248,10 @@ sub tokenize {
 
 		# --------------------------------------------------
 
+		# TODO column stuff
+
+		# --------------------------------------------------
+
 		if ($state eq 'text') {
 			if ($char eq "\\") {				
 				my $next_char = $self->_peek;
@@ -259,12 +259,13 @@ sub tokenize {
 					$self->_switch_state('eof');					
 					$self->token->append_content("\\");
 				}
-				else {										
+				else {			
+					trace "Escape next char [%s]", $next_char [TOKENIZE];
 					$self->token->append_content( $next_char );
 					$self->_inc_pointer;
 				}
 				next;
-			}
+			}		
 
 			if ($char eq "\n") {
 				$self->_create_token('line_break');
@@ -281,10 +282,6 @@ sub tokenize {
 					$self->token->append_content($char);
 				}
 				next;
-			}
-
-			if ($char eq "\n") {
-				$self->_
 			}
 
 			if ($char eq '[') {
@@ -460,9 +457,9 @@ sub _create_token {
 	/^link$/       && do { $t = Text::CaffeinatedMarkup::PullParser::LinkToken->new };
 	/^image$/      && do { $t = Text::CaffeinatedMarkup::PullParser::ImageToken->new };
 	/^div$/        && do { $t = Text::CaffeinatedMarkup::PullParser::DividerToken->new };
-	/^header$/     && do { $t = Text::CaffeinatedMarkup::PullParser::HeaderToken->new };
+	/^header$/     && do { $t = Text::CaffeinatedMarkup::PullParser::HeaderToken->new };	
 	/^line_break$/ && do { $t = Text::CaffeinatedMarkup::PullParser::LineBreakToken->new };
-	/^paragraph_break$/ && do { $t = Text::CaffeinatedMarkup::PullParser::ParagraphBreakToken->new };
+	/^paragraph_break$/ && do { $t = Text::CaffeinatedMarkup::PullParser::ParagraphBreakToken->new };	
 
 	if ($t) {
 		trace "Created new token [%s] [%s]", $requested, r:$t [TOKENIZE];
@@ -485,6 +482,7 @@ sub _create_and_emit_token {
 
 sub _discard_token {
 	my ($self) = @_;
+	trace "Discarding token [%s]", r:$self->token [TOKENIZE];
 	$self->_set_token(undef);
 	return;
 }
@@ -553,6 +551,13 @@ sub _peek_match {
 sub _parse_error {
 	my ($self,$message) = @_;
 	die "$message\n\n";
+}
+
+# ------------------------------------------------------------------------------
+
+sub _look_behind {
+	my ($self) = @_;
+	return $self->state_stack->[1]; # Look at the state behind the current head
 }
 
 # ------------------------------------------------------------------------------
