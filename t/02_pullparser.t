@@ -7,125 +7,24 @@ use Log::Declare;
 use Test::More;
 use Test::Exception;
 
-package Test;
-	use Moo;
-	use Log::Declare;
-	extends 'Text::CaffeinatedMarkup::PullParser';
-	has tokens => (is=>'rw',default=>sub{[]});
-
-	my $all = sub {
-		my ($self) = @_;
-		push @{$self->tokens}, $self->token;		
-		$self->_set_token(undef);
-	};
-
-
-	sub handle_text 		  {$all->($_[0])};
-	sub handle_emphasis 	  {$all->($_[0])};
-	sub handle_link 		  {$all->($_[0])};
-	sub handle_image 		  {$all->($_[0])};
-	sub handle_divider 		  {$all->($_[0])};
-	sub handle_header 		  {$all->($_[0])};
-	sub handle_linebreak      {$all->($_[0])};
-	sub handle_paragraphbreak {$all->($_[0])};
-	sub handle_rowstart		  {$all->($_[0])};
-	sub handle_rowend		  {$all->($_[0])};	
-	sub handle_columndivider  {$all->($_[0])};
-	sub handle_column		  {$all->($_[0])};
-
-    before 'tokenize' => sub {
-        my ($self) = @_;
-        $self->tokens([]);
-    };
-	
-package main;
-
-plan tests => 11;
+plan tests => 9;
 
 	use_ok 'Text::CaffeinatedMarkup::PullParser';
 	can_ok 'Text::CaffeinatedMarkup::PullParser', qw|tokenize|;	
 
-    my $pp = Test->new;
+    my $pp = new_ok 'Text::CaffeinatedMarkup::PullParser';
 
-    test_emphasis();
-    test_hyperlinks();
     test_images();
     test_headers();
     test_escaping();
     test_dividers();
     test_breaks();
-    test_rows_and_columns();
 
     # Not public interface things, but stuff to verify
     # that the internals do what they should!
     test_peek();
 	
-
-
 done_testing;
-
-# -----------------------------------------------------------------------------
-
-sub test_emphasis {
-    subtest 'emphasis' => sub {
-        plan tests => 2;
-
-    	subtest 'Simple mixed emphasis' => sub {
-    		plan tests => 5;
-    		$pp->tokenize('The **cat** sat __on__ the //mat//');
-    		test_expected_tokens_list(
-    			$pp->tokens,
-    			[qw|text emphasis text emphasis text emphasis text emphasis text emphasis text emphasis|]
-    		);
-    		# Check the content of some tokens
-    		is $pp->tokens->[0]->content, 'The ';
-    		is $pp->tokens->[1]->type,    'strong';
-    		is $pp->tokens->[5]->type,    'underline';
-    		is $pp->tokens->[9]->type,    'emphasis';
-    	};
-    
-    	subtest 'Emphasis at start of parse' => sub {
-    		plan tests => 4;
-            $pp->tokenize('**Yay!**');
-    		test_expected_tokens_list( $pp->tokens, [qw|emphasis text emphasis|] );
-    		is $pp->tokens->[1]->content, 'Yay!';
-    		is $pp->tokens->[0]->type,    'strong';
-    		is $pp->tokens->[2]->type,    'strong';
-    	};
-    };
-}
-
-# ------------------------------------------------------------------------------
-
-sub test_hyperlinks {
-    subtest 'test hyperlinks' => sub {
-        plan tests => 3;
-
-     	subtest 'Hyperlink with alt text' => sub {
-    		plan tests => 3;
-    		$pp->tokenize('Go here: [[http://www.example.com|example site]]');
-    		test_expected_tokens_list( $pp->tokens, [qw|text link|] );
-    		is $pp->tokens->[1]->href, 'http://www.example.com', 'href is correct';
-    		is $pp->tokens->[1]->text, 'example site', 'text is correct';
-    	};
-    
-    	subtest 'Hyperlink with no alt text' => sub {
-    		plan tests => 3;
-    		$pp->tokenize('Go here: [[http://www.example.com]]');
-    		test_expected_tokens_list( $pp->tokens, [qw|text link|] );
-    		is $pp->tokens->[1]->href, 'http://www.example.com', 'href is correct';
-    		is $pp->tokens->[1]->text, '', 'text is correct';
-    	};   
-
-        subtest 'Hyperlink at start of parse' => sub {
-    		plan tests => 3;
-    		$pp->tokenize('[[http://www.example.com]]');
-    		test_expected_tokens_list( $pp->tokens, [qw|link|] );
-    		is $pp->tokens->[0]->href, 'http://www.example.com', 'href is correct';
-    		is $pp->tokens->[0]->text, '', 'text is correct';
-    	};   
-    };
-}
 
 # ------------------------------------------------------------------------------
 
@@ -249,29 +148,6 @@ sub test_breaks {
 
 # ------------------------------------------------------------------------------
 
-sub test_rows_and_columns {
-	subtest 'test rows and columns' => sub {
-
-		my $cml = <<EOT
-Before row
-==
-First column||Second column
-||Third Column\\||Not a new column
-==
-After row
-EOT
-;
-		$pp->tokenize($cml);
-
-		error "%s",d:$pp->tokens;
-
-		test_expected_tokens_list(
-			$pp->tokens, [qw|text row_start text column_divider text column_divider text row_end text line_break|]
-		);
-	};
-}
-
-# ------------------------------------------------------------------------------
 
 # Test the classes of returned tokens - doesn't test
 # the content of any of the tokens.

@@ -32,6 +32,7 @@ has 'state_stack' => ( is => 'rwp' );
 has 'chars'   => ( is => 'rwp' );
 has 'pointer' => ( is => 'rwp' );
 has 'token'   => ( is => 'rwp' );
+has 'tokens'  => ( is => 'rwp', default => sub{[]} );
 
 has 'in_row_context' => ( is => 'rwp' );
 
@@ -70,6 +71,7 @@ sub tokenize {
     trace "Tokenize [$cml]" [TOKENIZE];
 
 	# init
+    $self->_set_tokens([]);
 	$self->_set_chars([split//,$cml]);
 	$self->_set_pointer(-1);
 	$self->_set_token(undef);
@@ -601,5 +603,24 @@ sub _switch_state {
 }
 
 # ------------------------------------------------------------------------------
+
+my $all = sub {
+	my ($self) = @_;
+	push @{$self->tokens}, $self->token;		
+	$self->_set_token(undef);
+};
+
+sub handle_text 		  {$all->($_[0])};
+sub handle_emphasis 	  {$all->($_[0])};
+sub handle_link 		  {$all->($_[0])};
+sub handle_image 		  {$all->($_[0])};
+sub handle_divider 		  {$all->($_[0])};
+sub handle_header 		  {$all->($_[0])};
+sub handle_linebreak      {$all->($_[0])};
+sub handle_paragraphbreak {$all->($_[0])};
+sub handle_rowstart		  {$all->($_[0])};
+sub handle_rowend		  {$all->($_[0])};	
+sub handle_columndivider  {$all->($_[0])};
+sub handle_column		  {$all->($_[0])};
 
 1;
