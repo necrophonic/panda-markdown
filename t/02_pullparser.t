@@ -7,7 +7,7 @@ use Log::Declare;
 use Test::More;
 use Test::Exception;
 
-plan tests => 9;
+plan tests => 8;
 
 	use_ok 'Text::CaffeinatedMarkup::PullParser';
 	can_ok 'Text::CaffeinatedMarkup::PullParser', qw|tokenize|;	
@@ -15,7 +15,6 @@ plan tests => 9;
     my $pp = new_ok 'Text::CaffeinatedMarkup::PullParser';
 
     test_images();
-    test_headers();
     test_escaping();
     test_dividers();
     test_breaks();
@@ -77,21 +76,6 @@ sub test_peek {
 			$pp->_set_pointer(1); # Set onto 'c'
 			is $pp->_peek, 'c', 'peek at "c"';
 		} 'live ok';
-	};
-}
-
-# ------------------------------------------------------------------------------
-
-sub test_headers {
-	subtest 'test headers' => sub {
-		plan tests => 4;
-		$pp->tokenize('# Header');
-		test_expected_tokens_list( $pp->tokens, [qw|header|] );
-		is $pp->tokens->[0]->level, 1, 'level is correct (1)';		
-
-		$pp->tokenize('### Header');
-		test_expected_tokens_list( $pp->tokens, [qw|header|] );
-		is $pp->tokens->[0]->level, 3, 'level is correct (3)';
 	};
 }
 
