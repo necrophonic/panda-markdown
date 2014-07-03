@@ -28,7 +28,6 @@ use Text::CaffeinatedMarkup::PullParser::RowToken;
 # * table
 # * block code
 # * inline code
-# * rows and columns
 
 has 'state_stack' => ( is => 'rwp' );
 has 'chars'   => ( is => 'rwp' );
@@ -576,7 +575,7 @@ sub _peek_match {
 
 sub _parse_error {
 	my ($self,$message) = @_;
-	die "$message\n\n";
+	die sprintf "PARSE ERROR AT CHAR (%d): %s\n\n",$self->pointer,$message;
 }
 
 # ------------------------------------------------------------------------------
