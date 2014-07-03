@@ -8,6 +8,7 @@ use Moo;
 use Log::Declare;
 
 use Text::CaffeinatedMarkup::PullParser::ParagraphBreakToken;
+use Text::CaffeinatedMarkup::PullParser::ColumnDividerToken;
 use Text::CaffeinatedMarkup::PullParser::LineBreakToken;
 use Text::CaffeinatedMarkup::PullParser::EmphasisToken;
 use Text::CaffeinatedMarkup::PullParser::DividerToken;
@@ -15,6 +16,7 @@ use Text::CaffeinatedMarkup::PullParser::HeaderToken;
 use Text::CaffeinatedMarkup::PullParser::ImageToken;
 use Text::CaffeinatedMarkup::PullParser::TextToken;
 use Text::CaffeinatedMarkup::PullParser::LinkToken;
+use Text::CaffeinatedMarkup::PullParser::RowToken;
 
 # TODO check eof error states
 
@@ -76,7 +78,7 @@ sub tokenize {
 	$self->_set_pointer(-1);
 	$self->_set_token(undef);
 	$self->_set_state_stack(['newline','none']);
-	$self->_set_in_row_context(true);
+	$self->_set_in_row_context(false);
 
 	while ( $self->pointer < $#{$self->chars} ) {
 
@@ -167,7 +169,43 @@ sub tokenize {
 					$self->_inc_pointer;					
 				}
 				next;
-			}		
+			}
+
+            if ($char eq '=') {
+                if ($self->_peek_match($char)) {
+
+                    $self->_discard_token;
+
+                    if ($self->in_row_context) {
+                        # Already in a row, so this is the end
+                        $self->_create_and_emit_token('row_end');
+                        $self->_set_in_row_context(false);
+                    }
+                    else {
+                        # Not in a row, so starting
+                        $self->_create_and_emit_token('row_start');
+                        $self->_set_in_row_context(true);
+                    }
+
+                    # Whether starting or ending we want to ignore
+                    # the rest of the line
+                    $self->_consume_until("\n");
+                    $self->_inc_pointer;
+                    next;
+                }
+                # Fall through to "anything else"
+            }
+
+            if ($char eq '-') {
+                if ($self->in_row_context && $self->_peek_match($char)) {
+                    $self->_discard_token;
+                    $self->_create_and_emit_token('column_divider');
+                    $self->_consume_until("\n");
+                    $self->_inc_pointer;
+                    next;
+                }
+                # Fall through to "anything else"
+            }
 
 			if ($char eq "\n") {
 				$self->_discard_token;
@@ -192,13 +230,9 @@ sub tokenize {
 				if ($self->_peek_match($char)) {										
 					$self->_create_and_emit_token($char);					
 					$self->_pop_state;
+                    next;
 				}
-				else {
-					$self->_switch_state('text');
-					$self->_create_token('text');
-					$self->token->append_content($char);
-				}
-				next;
+                # Fall through to "anything else"
 			}
 
 			if ($char eq '~') {
@@ -206,39 +240,27 @@ sub tokenize {
 					$self->_create_and_emit_token('div');
 					$self->_consume_until("\n");
 					$self->_inc_pointer; # Skip the newline!					
+                    next;
 				}
-				else {
-					$self->_switch_state('text');
-					$self->_create_token('text');
-					$self->token->append_content($char);
-				}
-				next;
+                # Fall through to "anything else"
 			}
 
 			if ($char eq '[') {
 				if ($self->_peek_match($char)) {
 					$self->_switch_state('link_href');
 					$self->_create_token('link');					
+                    next;
 				}
-				else {
-					$self->_switch_state('text');
-					$self->_create_token('text');
-					$self->token->append_content($char);
-				}
-				next;
+                # Fall through to "anything else"
 			}
 
 			if ($char eq '{') {
 				if ($self->_peek_match($char)) {
 					$self->_switch_state('image_src');
 					$self->_create_token('image');					
+                    next;
 				}
-				else {
-					$self->_switch_state('text');
-					$self->_create_token('text');
-					$self->token->append_content($char);
-				}
-				next;
+                # Fall through to "anything else"
 			}
 
 			# Anything else
@@ -461,6 +483,8 @@ sub _create_token {
 	/^div$/        && do { $t = Text::CaffeinatedMarkup::PullParser::DividerToken->new };
 	/^header$/     && do { $t = Text::CaffeinatedMarkup::PullParser::HeaderToken->new };	
 	/^line_break$/ && do { $t = Text::CaffeinatedMarkup::PullParser::LineBreakToken->new };
+    /^row_(start|end)$/ && do { $t = Text::CaffeinatedMarkup::PullParser::RowToken->new($1) };
+    /^column_divider$/  && do { $t = Text::CaffeinatedMarkup::PullParser::ColumnDividerToken->new };
 	/^paragraph_break$/ && do { $t = Text::CaffeinatedMarkup::PullParser::ParagraphBreakToken->new };	
 
 	if ($t) {
@@ -618,9 +642,7 @@ sub handle_divider 		  {$all->($_[0])};
 sub handle_header 		  {$all->($_[0])};
 sub handle_linebreak      {$all->($_[0])};
 sub handle_paragraphbreak {$all->($_[0])};
-sub handle_rowstart		  {$all->($_[0])};
-sub handle_rowend		  {$all->($_[0])};	
+sub handle_row  		  {$all->($_[0])};
 sub handle_columndivider  {$all->($_[0])};
-sub handle_column		  {$all->($_[0])};
 
 1;
