@@ -106,42 +106,21 @@ sub tokenize {
 				next;
 			}
 
-			if ($char =~ /[\*\/_]/) {
-				if ($self->_peek_match($char)) {										
-					$self->_create_and_emit_token($char);					
-				}
-				else {
-					$self->_push_state('text');
-					$self->_create_token('text');
-					$self->token->append_content($char);
-				}
-				next;
+			if ($char =~ /[\*\/_]/ && $self->_peek_match($char)) {										
+				$self->_create_and_emit_token($char);					
+                next;
 			}
 
-			if ($char eq '[') {
-				if ($self->_peek_match($char)) {
-					$self->_push_state('link_href');
-					$self->_create_token('link');
-				}
-				else {
-					$self->_push_state('text');
-					$self->_create_token('text');
-					$self->token->append_content($char);
-				}
-				next;
+			if ($char eq '[' && $self->_peek_match($char)) {
+				$self->_push_state('link_href');
+				$self->_create_token('link');
+                next;
 			}
 
-			if ($char eq '{') {
-				if ($self->_peek_match($char)) {
-					$self->_push_state('image_src');
-					$self->_create_token('image');
-				}
-				else {
-					$self->_push_state('text');
-					$self->_create_token('text');
-					$self->token->append_content($char);
-				}
-				next;
+			if ($char eq '{' && $self->_peek_match($char)) {
+				$self->_push_state('image_src');
+				$self->_create_token('image');
+                next;
 			}
 
 			# Anything else
@@ -195,15 +174,12 @@ sub tokenize {
                 # Fall through to "anything else"
             }
 
-            if ($char eq '-') {
-                if ($self->in_row_context && $self->_peek_match($char)) {
-                    $self->_discard_token;
-                    $self->_create_and_emit_token('column_divider');
-                    $self->_consume_until("\n");
-                    $self->_inc_pointer;
-                    next;
-                }
-                # Fall through to "anything else"
+            if ($char eq '-' && $self->in_row_context && $self->_peek_match($char)) {
+                $self->_discard_token;
+                $self->_create_and_emit_token('column_divider');
+                $self->_consume_until("\n");
+                $self->_inc_pointer;
+                next;
             }
 
 			if ($char eq "\n") {
@@ -224,42 +200,29 @@ sub tokenize {
 				next;
 			}
 
-			
-			if ($char =~ /[\*\/_]/) {
-				if ($self->_peek_match($char)) {										
-					$self->_create_and_emit_token($char);					
-					$self->_pop_state;
-                    next;
-				}
-                # Fall through to "anything else"
+			if ($char =~ /[\*\/_]/ && $self->_peek_match($char)) {
+				$self->_create_and_emit_token($char);					
+				$self->_pop_state;
+                next;
 			}
 
-			if ($char eq '~') {
-				if ($self->_peek_match($char)) {
-					$self->_create_and_emit_token('div');
-					$self->_consume_until("\n");
-					$self->_inc_pointer; # Skip the newline!					
-                    next;
-				}
-                # Fall through to "anything else"
+			if ($char eq '~' && $self->_peek_match($char)) {
+				$self->_create_and_emit_token('div');
+				$self->_consume_until("\n");
+				$self->_inc_pointer; # Skip the newline!					
+                next;
 			}
 
-			if ($char eq '[') {
-				if ($self->_peek_match($char)) {
-					$self->_switch_state('link_href');
-					$self->_create_token('link');					
-                    next;
-				}
-                # Fall through to "anything else"
+			if ($char eq '[' && $self->_peek_match($char)) {
+				$self->_switch_state('link_href');
+				$self->_create_token('link');					
+                next;
 			}
 
-			if ($char eq '{') {
-				if ($self->_peek_match($char)) {
-					$self->_switch_state('image_src');
-					$self->_create_token('image');					
-                    next;
-				}
-                # Fall through to "anything else"
+			if ($char eq '{' && $self->_peek_match($char)) {
+				$self->_switch_state('image_src');
+				$self->_create_token('image');					
+                next;
 			}
 
 			# Anything else
@@ -268,10 +231,6 @@ sub tokenize {
 			$self->token->append_content($char);
 			next;
 		}
-
-		# --------------------------------------------------
-
-		# TODO column stuff
 
 		# --------------------------------------------------
 
@@ -471,17 +430,17 @@ sub _create_token {
 	
 	my $t;
 	$_ = $requested;
-	/^text$/       && do { $t = Text::CaffeinatedMarkup::PullParser::TextToken->new };
-	/^\*$/         && do { $t = Text::CaffeinatedMarkup::PullParser::EmphasisToken->new('strong') };
-	/^\/$/         && do { $t = Text::CaffeinatedMarkup::PullParser::EmphasisToken->new('emphasis') };
-	/^_$/          && do { $t = Text::CaffeinatedMarkup::PullParser::EmphasisToken->new('underline') };
-	/^-$/          && do { $t = Text::CaffeinatedMarkup::PullParser::EmphasisToken->new('delete') };
-	/^\+$/         && do { $t = Text::CaffeinatedMarkup::PullParser::EmphasisToken->new('insert') };
-	/^link$/       && do { $t = Text::CaffeinatedMarkup::PullParser::LinkToken->new };
-	/^image$/      && do { $t = Text::CaffeinatedMarkup::PullParser::ImageToken->new };
-	/^div$/        && do { $t = Text::CaffeinatedMarkup::PullParser::DividerToken->new };
-	/^header$/     && do { $t = Text::CaffeinatedMarkup::PullParser::HeaderToken->new };	
-	/^line_break$/ && do { $t = Text::CaffeinatedMarkup::PullParser::LineBreakToken->new };
+	/^text$/            && do { $t = Text::CaffeinatedMarkup::PullParser::TextToken->new };
+	/^\*$/              && do { $t = Text::CaffeinatedMarkup::PullParser::EmphasisToken->new('strong') };
+	/^\/$/              && do { $t = Text::CaffeinatedMarkup::PullParser::EmphasisToken->new('emphasis') };
+	/^_$/               && do { $t = Text::CaffeinatedMarkup::PullParser::EmphasisToken->new('underline') };
+	/^-$/               && do { $t = Text::CaffeinatedMarkup::PullParser::EmphasisToken->new('delete') };
+	/^\+$/              && do { $t = Text::CaffeinatedMarkup::PullParser::EmphasisToken->new('insert') };
+	/^link$/            && do { $t = Text::CaffeinatedMarkup::PullParser::LinkToken->new };
+	/^image$/           && do { $t = Text::CaffeinatedMarkup::PullParser::ImageToken->new };
+	/^div$/             && do { $t = Text::CaffeinatedMarkup::PullParser::DividerToken->new };
+	/^header$/          && do { $t = Text::CaffeinatedMarkup::PullParser::HeaderToken->new };	
+	/^line_break$/      && do { $t = Text::CaffeinatedMarkup::PullParser::LineBreakToken->new };
     /^row_(start|end)$/ && do { $t = Text::CaffeinatedMarkup::PullParser::RowToken->new($1) };
     /^column_divider$/  && do { $t = Text::CaffeinatedMarkup::PullParser::ColumnDividerToken->new };
 	/^paragraph_break$/ && do { $t = Text::CaffeinatedMarkup::PullParser::ParagraphBreakToken->new };	
