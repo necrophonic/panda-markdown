@@ -13,6 +13,12 @@ has html => ( is => 'rwp', default => sub {''} );
 has in_paragraph   => ( is => 'rw' );
 has in_strong      => ( is => 'rw' );
 has in_emphasis    => ( is => 'rw' );
+has in_underline   => ( is => 'rw' );
+has in_delete      => ( is => 'rw' );
+has in_insert      => ( is => 'rw' );
+has in_row         => ( is => 'rw' );
+
+has current_row    => ( is => 'rw' );
 
 use Readonly;
 Readonly my $PARAGRAPH_START => '<p>';
@@ -29,6 +35,10 @@ sub do {
 	$self->in_paragraph(false);
 	$self->in_strong(false);
 	$self->in_emphasis(false);
+	$self->in_underline(false);
+	$self->in_delete(false);
+	$self->in_insert(false);
+    $self->in_row(false);
 
 	info "Starting with HTML [%s]", $self->html;
 
@@ -42,6 +52,8 @@ sub do {
 sub handle_text {
 	my ($self) = @_;
 	my $content = $self->token->content;
+
+    #return unless $content; # Skip empty content
 
 	unless ($self->in_paragraph) {
 		$content = $PARAGRAPH_START . $content;
@@ -119,19 +131,71 @@ sub handle_header {
 
 # ------------------------------------------------------------------------------
 
+sub handle_row {
+    my ($self) = @_;
+    
+    # If not already in row context then start caching the output
+    unless ( $self->in_row ) {
+        $self->in_row(true);
+        $self->current_row({
+            content => '',
+            columns => 1,
+        });
+    }
+    else {
+        $self->_finalise_paragraph_if_open;
+        $self->in_row(false);
+        $self->_append_html(
+            '<div class="row-'
+            .$self->current_row->{columns}
+            .'"><span class="column">'
+            .$self->current_row->{content}
+            .'</span></div>'
+        );
+    }
+}
+
+# ------------------------------------------------------------------------------
+
+sub handle_columndivider {
+    my ($self) = @_;
+
+    unless ($self->in_row) {
+        # Ignore outside of a row!
+        return;
+    }
+    $self->current_row->{columns}++;
+    $self->_finalise_paragraph_if_open;
+    $self->_append_html( '</span><span class="column">' );
+}
+
+# ------------------------------------------------------------------------------
+
 sub parse_end {
 	my ($self) = @_;
-	if ($self->in_paragraph) {
-		# Still in a paragraph, so finalise it
-		$self->_append_html( $PARAGRAPH_END );
-	}
+    $self->_finalise_paragraph_if_open;
 }
 
 # ------------------------------------------------------------------------------
 
 sub _append_html {
 	my ($self, $append) = @_;
-	$self->_set_html( $self->html . $append );
+    if ($self->in_row) {
+    	$self->current_row->{content} = $self->current_row->{content} . $append;
+    }
+    else {
+    	$self->_set_html( $self->html . $append );
+    }
+}
+
+# ------------------------------------------------------------------------------
+
+sub _finalise_paragraph_if_open {
+    my ($self) = @_;
+    if ($self->in_paragraph) {
+        $self->_append_html( $PARAGRAPH_END );
+        $self->in_paragraph(false);
+    }
 }
 
 # ------------------------------------------------------------------------------

@@ -53,6 +53,7 @@ sub _emit_token {
 	(my $method = ref $self->token) =~ s/(?:.*)\::(.+?)Token/handle_\L$1/;	
 	debug "Calling [%s]", $method [TOKENIZE];
 	$self->token->finalise;
+
 	$self->$method();
 	$self->_set_token(undef);
 }

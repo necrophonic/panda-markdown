@@ -6,7 +6,7 @@ use Log::Declare;
 
 use Test::More;
 
-plan tests => 8;
+plan tests => 9;
 
 	use_ok 'Text::CaffeinatedMarkup::HTML';
 	new_ok 'Text::CaffeinatedMarkup::HTML';
@@ -19,6 +19,7 @@ plan tests => 8;
 	test_divider();
 	test_headers();
 	test_basic_images();
+    test_basic_row();
 
 done_testing();
 
@@ -111,6 +112,25 @@ sub test_basic_images {
 		   '<p>See this <img src="image.jpg"></p>',
 		   'simple image with no options in paragraph';
 	};
+}
+
+# ------------------------------------------------------------------------------
+
+sub test_basic_row {
+    subtest 'Basic row' => sub {
+        plan tests => 3;
+        is $parser->do(qq|==\nFirst\n--\nSecond\n==|),
+           q|<div class="row-2"><span class="column"><p>First</p></span><span class="column"><p>Second</p></span></div>|,
+           'two column row';
+
+        is $parser->do(qq|==\nFirst\n--\n**Second**\n==|),
+           q|<div class="row-2"><span class="column"><p>First</p></span><span class="column"><p><strong>Second</strong></p></span></div>|,
+           'two column row with emphasis';
+
+        is $parser->do(qq|==\nFirst\n--\n{{image.jpg}}\n==|),
+           q|<div class="row-2"><span class="column"><p>First</p></span><span class="column"><img src="image.jpg"></span></div>|,
+           'two column row with image';
+    };
 }
 
 # ------------------------------------------------------------------------------
