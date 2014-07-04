@@ -67,17 +67,17 @@ sub parse_end {
 # ------------------------------------------------------------------------------
 
 sub tokenize {
-	my ($self, $cml) = @_;	
+    my ($self, $cml) = @_;	
 
     trace "Tokenize [$cml]" [TOKENIZE];
 
 	# init
     $self->_set_tokens([]);
-	$self->_set_chars([split//,$cml]);
-	$self->_set_pointer(-1);
-	$self->_set_token(undef);
-	$self->_set_state_stack(['newline','none']);
-	$self->_set_in_row_context(false);
+    $self->_set_chars([split//,$cml]);
+    $self->_set_pointer(-1);
+    $self->_set_token(undef);
+    $self->_set_state_stack(['newline','none']);
+    $self->_set_in_row_context(false);
 
 	while ( $self->pointer < $#{$self->chars} ) {
 
