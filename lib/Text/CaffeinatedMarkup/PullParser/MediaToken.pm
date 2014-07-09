@@ -1,4 +1,4 @@
-package Text::CaffeinatedMarkup::PullParser::ImageToken;
+package Text::CaffeinatedMarkup::PullParser::MediaToken;
 
 use strict;
 use v5.10;
@@ -18,7 +18,7 @@ has height	=> ( is => 'rw' );
 
 sub append_src {
 	my ($self, $char) = @_;
-	debug "Append char [%s] to image  token src", $char [IMAGE_TOKEN SRC];
+	debug "Append char [%s] to media  token src", $char [IMAGE_TOKEN SRC];
 	$self->_set_src( $self->src . $char );
 	return;
 }
@@ -27,7 +27,7 @@ sub append_src {
 
 sub append_options {
 	my ($self, $char) = @_;
-	debug "Append char [%s] to image token raw options", $char [IMAGE_TOKEN OPTIONS];
+	debug "Append char [%s] to media token raw options", $char [IMAGE_TOKEN OPTIONS];
 	$self->_set_options( $self->options . $char );
 	return;
 }

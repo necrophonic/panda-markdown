@@ -13,7 +13,7 @@ use Text::CaffeinatedMarkup::PullParser::LineBreakToken;
 use Text::CaffeinatedMarkup::PullParser::EmphasisToken;
 use Text::CaffeinatedMarkup::PullParser::DividerToken;
 use Text::CaffeinatedMarkup::PullParser::HeaderToken;
-use Text::CaffeinatedMarkup::PullParser::ImageToken;
+use Text::CaffeinatedMarkup::PullParser::MediaToken;
 use Text::CaffeinatedMarkup::PullParser::TextToken;
 use Text::CaffeinatedMarkup::PullParser::LinkToken;
 use Text::CaffeinatedMarkup::PullParser::RowToken;
@@ -119,8 +119,8 @@ sub tokenize {
 			}
 
 			if ($char eq '{' && $self->_peek_match($char)) {
-				$self->_push_state('image_src');
-				$self->_create_token('image');
+				$self->_push_state('media_src');
+				$self->_create_token('media');
                 next;
 			}
 
@@ -221,8 +221,8 @@ sub tokenize {
 			}
 
 			if ($char eq '{' && $self->_peek_match($char)) {
-				$self->_switch_state('image_src');
-				$self->_create_token('image');					
+				$self->_switch_state('media_src');
+				$self->_create_token('media');					
                 next;
 			}
 
@@ -280,8 +280,8 @@ sub tokenize {
 
 			if ($char eq '{') {
 				if ($self->_peek_match($char)) {
-					$self->_push_state('image_src');
-					$self->_create_token('image');
+					$self->_push_state('media_src');
+					$self->_create_token('media');
 				}
 				else {
 					$self->token->append_content($char);
@@ -345,7 +345,7 @@ sub tokenize {
 
 		# --------------------------------------------------
 
-		if ($state eq 'image_src') {
+		if ($state eq 'media_src') {
 			if ($char eq '}') {
 				if (!defined $self->_peek) {
 					die "Unexpected end of file"; # TODO parse_error
@@ -361,7 +361,7 @@ sub tokenize {
 			}
 
 			if ($char eq '|') {
-				$self->_switch_state('image_options');
+				$self->_switch_state('media_options');
 				next;
 			}
 
@@ -372,7 +372,7 @@ sub tokenize {
 
 		# --------------------------------------------------
 
-		if ($state eq 'image_options') {
+		if ($state eq 'media_options') {
 			if ($char eq '}') {
 				if (!defined $self->_peek) {
 					die "Unexpected end of file"; # TODO parse_error
@@ -438,7 +438,7 @@ sub _create_token {
 	/^-$/               && do { $t = Text::CaffeinatedMarkup::PullParser::EmphasisToken->new('delete') };
 	/^\+$/              && do { $t = Text::CaffeinatedMarkup::PullParser::EmphasisToken->new('insert') };
 	/^link$/            && do { $t = Text::CaffeinatedMarkup::PullParser::LinkToken->new };
-	/^image$/           && do { $t = Text::CaffeinatedMarkup::PullParser::ImageToken->new };
+	/^media$/           && do { $t = Text::CaffeinatedMarkup::PullParser::MediaToken->new };
 	/^div$/             && do { $t = Text::CaffeinatedMarkup::PullParser::DividerToken->new };
 	/^header$/          && do { $t = Text::CaffeinatedMarkup::PullParser::HeaderToken->new };	
 	/^line_break$/      && do { $t = Text::CaffeinatedMarkup::PullParser::LineBreakToken->new };
@@ -596,7 +596,7 @@ my $all = sub {
 sub handle_text 		  {$all->($_[0])};
 sub handle_emphasis 	  {$all->($_[0])};
 sub handle_link 		  {$all->($_[0])};
-sub handle_image 		  {$all->($_[0])};
+sub handle_media 		  {$all->($_[0])};
 sub handle_divider 		  {$all->($_[0])};
 sub handle_header 		  {$all->($_[0])};
 sub handle_linebreak      {$all->($_[0])};
