@@ -87,12 +87,14 @@ sub test_simple_markup_in_column {
 $pp->tokenize(<<EOT
 ==
 **Important!** and something trivial
+--
+**More Important!**
 ==
 EOT
 );
     
 		test_expected_tokens_list(
-			$pp->tokens, [qw|row emphasis text emphasis text row|]
+			$pp->tokens, [qw|row emphasis text emphasis text column_divider emphasis text emphasis row|]
 		);
         is $pp->tokens->[2]->content, 'Important!', 'text sample ok';
     };
