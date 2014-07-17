@@ -124,6 +124,11 @@ sub tokenize {
                 next;
 			}
 
+            if ($char eq "\n") {
+                $self->_push_state('newline');
+                next;
+            }
+
 			# Anything else
 			$self->_push_state('text');
 			$self->_create_token('text');

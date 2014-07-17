@@ -29,7 +29,7 @@ done_testing;
 
 sub test_media {
     subtest 'test media' => sub {
-        plan tests => 3;
+        plan tests => 4;
 
 	    subtest 'Image with options' => sub {
 	    	plan tests => 3;
@@ -54,6 +54,15 @@ sub test_media {
 	    	is $pp->tokens->[1]->src, 'images/cat.jpg', 'src is correct';
 	    	is $pp->tokens->[1]->options, '', 'options is correct';
 	    };
+        
+        subtest 'Image in row' => sub {
+	    	plan tests => 3;
+	    	$pp->tokenize(qq|==\n{{images/cat.jpg}}\n==|);
+	    	test_expected_tokens_list( $pp->tokens, [qw|row media row|] );
+	    	is $pp->tokens->[1]->src, 'images/cat.jpg', 'src is correct';
+	    	is $pp->tokens->[1]->options, '', 'options is correct';
+	    };
+
     };
 }
 
