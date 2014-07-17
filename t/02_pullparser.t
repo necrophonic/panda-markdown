@@ -115,7 +115,7 @@ sub test_dividers {
 
 sub test_breaks {
     subtest 'test breaks' => sub {
-		plan tests => 5;
+		plan tests => 6;
 
 		$pp->tokenize("Text\nText after");
 		test_expected_tokens_list( $pp->tokens, [qw|text line_break text|] );
@@ -127,6 +127,11 @@ sub test_breaks {
 		$pp->tokenize("Text\n\n\n\n\nMore Text after");
 		test_expected_tokens_list( $pp->tokens, [qw|text paragraph_break text|] );
 		is $pp->tokens->[2]->content, 'More Text after', 'text ok';
+
+        subtest 'supressed breaks' => sub {
+    		$pp->tokenize("==\nCol\n--\nCol\n==");
+	    	test_expected_tokens_list( $pp->tokens, [qw|row text column_divider text row|] );
+        };
 	};
 }
 
