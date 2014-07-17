@@ -257,7 +257,7 @@ sub tokenize {
 
 			if ($char eq "\n") {
 				$self->_create_token('line_break');
-				$self->_push_state('newline');
+				$self->_switch_state('newline');
 				next;
 			}
 			

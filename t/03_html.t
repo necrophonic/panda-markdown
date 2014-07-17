@@ -18,7 +18,7 @@ plan tests => 9;
 	test_basic_link();
 	test_divider();
 	test_headers();
-	test_basic_images();
+	test_basic_image_media();
     test_basic_row();
 
 done_testing();
@@ -97,7 +97,7 @@ sub test_headers {
 
 # ------------------------------------------------------------------------------
 
-sub test_basic_images {
+sub test_basic_image_media {
 	subtest 'Basic Images' => sub {
 		plan tests => 3;
 		is $parser->do( '{{image.jpg|<<,W50,H60}}' ),

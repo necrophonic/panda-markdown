@@ -53,6 +53,7 @@ sub handle_text {
 	my ($self) = @_;
 	my $content = $self->token->content;
 
+    trace "Handle TEXT [%s]", $content [HTML];
     #return unless $content; # Skip empty content
 
 	unless ($self->in_paragraph) {
@@ -77,6 +78,9 @@ sub handle_emphasis {
 	/delete/    && do { $tag = 'del' };
 	/insert/    && do { $tag = 'ins' };
 
+    trace "Handle EMPHASIS [%s]",$self->token->type [HTML];
+
+    $self->_open_paragraph_if_not;
 	$self->_parse_error('bad emphasis tag map in html') unless $tag;
 	$self->_append_html( $self->$access ? "</$tag>" : "<$tag>" );
 	$self->$access( !$self->$access );
@@ -95,7 +99,7 @@ sub handle_link {
 
 # ------------------------------------------------------------------------------
 
-sub handle_image {
+sub handle_media {
 	my ($self) = @_;
 
 	my $src    = $self->token->src;
@@ -195,6 +199,16 @@ sub _finalise_paragraph_if_open {
     if ($self->in_paragraph) {
         $self->_append_html( $PARAGRAPH_END );
         $self->in_paragraph(false);
+    }
+}
+
+# ------------------------------------------------------------------------------
+
+sub _open_paragraph_if_not {
+    my ($self) = @_;
+    unless ($self->in_paragraph) {
+        $self->_append_html( $PARAGRAPH_START );
+        $self->in_paragraph(true);
     }
 }
 
