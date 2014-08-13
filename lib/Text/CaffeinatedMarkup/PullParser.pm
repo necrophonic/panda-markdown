@@ -21,7 +21,7 @@ use Text::CaffeinatedMarkup::PullParser::RowToken;
 # TODO check eof error states
 
 # To implement
-# * block escape
+# * block escape *
 # * block quote
 # * spacers
 # * list
@@ -35,7 +35,8 @@ has 'pointer' => ( is => 'rwp' );
 has 'token'   => ( is => 'rwp' );
 has 'tokens'  => ( is => 'rwp', default => sub{[]} );
 
-has 'in_row_context' => ( is => 'rwp' );
+has 'in_row_context'    => ( is => 'rwp' );
+has 'is_block_escaping' => ( is => 'rwp' );
 
 # ------------------------------------------------------------------------------
 
@@ -65,7 +66,7 @@ sub parse_end {
 	# Override in child
 }
 
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 sub tokenize {
     my ($self, $cml) = @_;	
@@ -79,6 +80,7 @@ sub tokenize {
     $self->_set_token(undef);
     $self->_set_state_stack(['newline','none']);
     $self->_set_in_row_context(false);
+    $self->_set_is_block_escaping(false);
 
 	while ( $self->pointer < $#{$self->chars} ) {
 
@@ -105,6 +107,17 @@ sub tokenize {
 					$self->_inc_pointer;
 				}
 				next;
+			}
+			if ($char eq '%') {
+				if (!defined $self->_peek) { #eof
+					$self->_push_state('eof');
+					$self->_create_token('text');
+					$self->token->append_content('%');
+				}
+				else {
+					$self->_set_is_block_escaping(true);
+					$self->_inc_pointer;
+				}
 			}
 
 			if ($char =~ /[\*\/_]/ && $self->_peek_match($char)) {										
@@ -153,6 +166,17 @@ sub tokenize {
 					$self->_inc_pointer;					
 				}
 				next;
+			}
+			if ($char eq '%') {
+				if (!defined $self->_peek) { #eof
+					$self->_switch_state('eof');
+					$self->_create_token('text');
+					$self->token->append_content('%');
+				}
+				else {
+					$self->_set_is_block_escaping(true);
+					$self->_inc_pointer;
+				}
 			}
 
             if ($char eq '=') {
@@ -250,6 +274,18 @@ sub tokenize {
 				else {			
 					trace "Escape next char [%s]", $next_char [TOKENIZE];
 					$self->token->append_content( $next_char );
+					$self->_inc_pointer;
+				}
+				next;
+			}		
+			if ($char eq '%') {				
+				my $next_char = $self->_peek;
+				if (!defined $next_char) { # eof
+					$self->_switch_state('eof');					
+					$self->token->append_content('%');
+				}
+				else {					
+					$self->_set_is_block_escaping(true);
 					$self->_inc_pointer;
 				}
 				next;
