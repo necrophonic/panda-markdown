@@ -186,6 +186,21 @@ sub handle_columndivider {
 
 # ------------------------------------------------------------------------------
 
+sub handle_linebreak {
+	my ($self) = @_;
+	$self->_append_html('<br>');
+}
+
+# ------------------------------------------------------------------------------
+
+sub handle_paragraphbreak {
+	my ($self) = @_;
+	$self->_finalise_paragraph_if_open;
+	$self->_open_paragraph_if_not;
+}
+
+# ------------------------------------------------------------------------------
+
 sub parse_end {
 	my ($self) = @_;
     $self->_finalise_paragraph_if_open;

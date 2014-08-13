@@ -6,7 +6,7 @@ use Log::Declare;
 
 use Test::More;
 
-plan tests => 9;
+plan tests => 11;
 
 	use_ok 'Text::CaffeinatedMarkup::HTML';
 	new_ok 'Text::CaffeinatedMarkup::HTML';
@@ -20,6 +20,8 @@ plan tests => 9;
 	test_headers();
 	test_basic_image_media();
     test_basic_row();
+    test_line_breaks();
+    test_paragraph_breaks();
 
 done_testing();
 
@@ -131,6 +133,32 @@ sub test_basic_row {
            q|<div class="row-2"><span class="column"><p>First</p></span><span class="column"><img src="image.jpg"></span></div>|,
            'two column row with image';
     };
+}
+
+# ------------------------------------------------------------------------------
+
+sub test_line_breaks {
+	subtest 'Line Breaks' => sub {
+		plan tests => 1;
+		is $parser->do(qq|Something\nAfter break|),
+		   q|<p>Something<br>After break</p>|,
+		   'single break in paragraph';
+	};
+}
+
+# ------------------------------------------------------------------------------
+
+sub test_paragraph_breaks {
+	subtest 'Paragraph Breaks' => sub {
+		plan tests => 2;
+		is $parser->do(qq|Something\n\nAfter break|),
+		   q|<p>Something</p><p>After break</p>|,
+		   'single paragraph break';
+
+		is $parser->do(qq|Something\n\n\n\n\nAfter break|),
+		   q|<p>Something</p><p>After break</p>|,
+		   'elongated paragraph break (multiple collapse to single)';
+	};
 }
 
 # ------------------------------------------------------------------------------
