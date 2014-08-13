@@ -8,6 +8,17 @@ extends 'Text::CaffeinatedMarkup::PullParser';
 use Log::Declare;
 use boolean;
 
+# To implement
+# * block escape
+# * block quote
+# * spacers
+# * list
+# * table
+# * block code
+# * inline code
+# * media - other types
+
+
 has html => ( is => 'rwp', default => sub {''} );
 
 has in_paragraph   => ( is => 'rw' );
