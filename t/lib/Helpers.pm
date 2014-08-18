@@ -11,6 +11,10 @@ our @EXPORT = qw|test_expected_tokens_list|;
 sub test_expected_tokens_list {
 	my ($tokens_got, $tokens_expected) = @_;
 
+	if (scalar @$tokens_got != @$tokens_expected) {
+		fail('Mismatch list! - got ['.@$tokens_got.'] expected ['.@$tokens_expected.']');
+	}
+
 	subtest 'expect tokens' => sub {
 		plan tests => scalar @$tokens_expected;
 
