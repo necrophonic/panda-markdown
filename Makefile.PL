@@ -8,7 +8,7 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
 	NAME		=> 'Text::CaffeinatedMarkup',
-	VERSION		=> '0.12',
+	VERSION		=> '0.20',
 	ABSTRACT	=> 'Panda blog orientated markup',
 	AUTHOR		=> 'J Gregory <jgregory@cpan.org>',
 	LICENSE		=> 'artistic_2',
@@ -18,6 +18,7 @@ WriteMakefile(
 		'Readonly' 	   => '1.03',
 		'HTML::Escape' => '1.08',
 		'Log::Log4perl'=> '1.42',
+		'Log::Declare' => '0.03'
 	},
 	BUILD_REQUIRES => {
 		"Test::More" 	  => '0.99',
