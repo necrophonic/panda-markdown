@@ -13,12 +13,8 @@ plan tests => 3;
 	use_ok 'Text::CaffeinatedMarkup::HTML';
 	new_ok 'Text::CaffeinatedMarkup::HTML';
 
-	my $parser = Text::CaffeinatedMarkup::HTML->new;
-
-	my $data;
-	{local $/=undef;$data=<DATA>}	
-	
-	test_html_data_document($parser,$data);
+	local $/=undef;	
+	test_html_data_document(Text::CaffeinatedMarkup::HTML->new,<DATA>);
 
 done_testing();
 
