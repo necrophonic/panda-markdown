@@ -9,7 +9,6 @@ use Log::Declare;
 use boolean;
 
 # To implement
-# * block escape *
 # * block quote
 # * spacers
 # * list
@@ -149,6 +148,8 @@ sub handle_header {
 sub handle_row {
     my ($self) = @_;
     
+	$self->_finalise_paragraph_if_open;
+
     # If not already in row context then start caching the output
     unless ( $self->in_row ) {
         $self->in_row(true);
@@ -158,7 +159,6 @@ sub handle_row {
         });
     }
     else {
-        $self->_finalise_paragraph_if_open;
         $self->in_row(false);
         $self->_append_html(
             '<div class="row-'
