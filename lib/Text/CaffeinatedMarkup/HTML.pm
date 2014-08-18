@@ -104,6 +104,7 @@ sub handle_link {
 	my $href = $self->token->href;
 	my $text = $self->token->text || $href;
 
+	$self->_open_paragraph_if_not;
 	$self->_append_html( qq|<a href="$href">$text</a>| );
 }
 
@@ -197,8 +198,7 @@ sub handle_linebreak {
 sub handle_paragraphbreak {
 	my ($self) = @_;
 	trace "Handle PARAGRAPH BREAK" [HTML];
-	$self->_finalise_paragraph_if_open;
-	#$self->_open_paragraph_if_not;
+	$self->_finalise_paragraph_if_open;	
 }
 
 # ------------------------------------------------------------------------------

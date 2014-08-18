@@ -17,7 +17,7 @@ plan tests => 12;
 	test_basic_text_with_emphasis();
 	test_basic_link();
 	test_divider();
-	 test_headers();
+	test_headers();
 	test_basic_image_media();
     test_basic_row();
     test_line_breaks();
@@ -59,11 +59,11 @@ sub test_basic_link {
 		plan tests => 3;
 
 		is $parser->do( '[[http://example.com|my site]]' ),
-		   '<a href="http://example.com">my site</a>',
+		   '<p><a href="http://example.com">my site</a></p>',
 		   'basic link';
 
 		is $parser->do( '[[http://example.com]]' ),
-		   '<a href="http://example.com">http://example.com</a>',
+		   '<p><a href="http://example.com">http://example.com</a></p>',
 		   'basic link (no text)';
 
 		is $parser->do( 'Go here [[http://example.com|a]] its great!' ),
