@@ -1,3 +1,6 @@
+0.21 2014-08-18
+	- Changed pull- to pulled- in classes to avoid bootstrap clash
+
 0.20 2014-08-18
 	- Rewrite! See current docs for new syntax
 
