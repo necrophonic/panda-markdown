@@ -121,7 +121,7 @@ sub test_basic_image_media {
 
 sub test_basic_row {
     subtest 'Basic row' => sub {
-        plan tests => 3;
+        plan tests => 4;
         is $parser->do(qq|==\nFirst\n--\nSecond\n==|),
            q|<div class="row-2"><span class="column"><p>First</p></span><span class="column"><p>Second</p></span></div>|,
            'two column row';
@@ -133,6 +133,10 @@ sub test_basic_row {
         is $parser->do(qq|==\nFirst\n--\n{{image.jpg}}\n==|),
            q|<div class="row-2"><span class="column"><p>First</p></span><span class="column"><img src="image.jpg"></span></div>|,
            'two column row with image';
+
+        is $parser->do(qq|First\n==\nThen a row\n==|),
+           q|<p>First</p><div class="row-1"><span class="column"><p>Then a row</p></span></div>|,
+           'text before a row';
     };
 }
 
