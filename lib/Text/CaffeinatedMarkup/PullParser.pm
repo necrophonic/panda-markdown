@@ -141,6 +141,16 @@ sub tokenize {
 				next;
 			}
 
+			if ($char eq '#') {				
+				my $consumed = $self->_consume_until(' ');
+				$self->_create_token('header');
+				$self->token->level($consumed);
+                trace "Set header level to [%s]",$consumed [TOKENIZE];
+				$self->_inc_pointer;
+				$self->_push_state('header');
+				next;
+			}
+
 			if ($char =~ /[\*\/_]/ && $self->_peek_match($char)) {										
 				$self->_create_and_emit_token($char);					
                 next;

@@ -8,13 +8,14 @@ use Helpers;
 
 use Text::CaffeinatedMarkup::PullParser;
 
-plan tests => 2;
+plan tests => 3;
 
     can_ok 'Text::CaffeinatedMarkup::PullParser', qw|handle_header|;
 
     my $pp = Text::CaffeinatedMarkup::PullParser->new;
 
     test_simple_headers();
+    test_heading_after_break();
 
 done_testing();
 
@@ -36,3 +37,16 @@ sub test_simple_headers {
 }
 
 # ------------------------------------------------------------------------------
+
+sub test_heading_after_break {
+	subtest 'test heading after break' => sub {
+		plan tests => 4;
+		$pp->tokenize(qq|cracking.\n\n## Ahead warp factor 5!|);
+		test_expected_tokens_list( $pp->tokens, [qw|text paragraph_break header|]);
+		is $pp->tokens->[0]->content, 'cracking.', 'content is correct';
+		is $pp->tokens->[2]->level, 2, 'level is correct (3)';
+		is $pp->tokens->[2]->content, 'Ahead warp factor 5!', 'content is correct';
+	};
+}
+
+
