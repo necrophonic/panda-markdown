@@ -119,8 +119,8 @@ sub handle_media {
 
 	my $class  = '';
 	if ($_ = $self->token->align) {
-		/^left$/    && do { $class=' class="pull-left"' };
-		/^right$/   && do { $class=' class="pull-right"' };
+		/^left$/    && do { $class=' class="pulled-left"' };
+		/^right$/   && do { $class=' class="pulled-right"' };
 		/^stretch$/ && do { $class=' class="stretch"' };
 		/^center$/  && do { $class=' class="center"' };
 	}
