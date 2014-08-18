@@ -108,7 +108,7 @@ sub test_basic_image_media {
 	subtest 'Basic Images' => sub {
 		plan tests => 3;
 		is $parser->do( '{{image.jpg|<<,W50,H60}}' ),
-		   '<img src="image.jpg" width="50" height="60" class="pull-left">',
+		   '<img src="image.jpg" width="50" height="60" class="pulled-left">',
 		   'simple image';
 
 		is $parser->do( '{{image.jpg}}' ),
