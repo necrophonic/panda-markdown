@@ -94,6 +94,27 @@ sub tokenize {
 		debug "Get next with state [%s], char [%s] (%s)", $state||'no state', $char||'no char', $self->pointer [TOKENIZE];		
 
 		if ($state eq 'none') {
+			if ($self->is_block_escaping) {
+
+				if ($char eq '%') {
+					if (!defined $self->_peek) { #eof
+						$self->_push_state('eof');
+						$self->_create_token('text');
+						$self->token->append_content('%');
+					}
+					else {
+						$self->_toggle_escape;					
+						$self->_inc_pointer;
+					}
+					next;
+				}
+
+				$self->_push_state('text');
+				$self->_create_token('text');
+				$self->token->append_content($char);
+				next;
+			}
+
 			if ($char eq "\\") {
 				if (!defined $self->_peek) { # eof
 					$self->_push_state('eof');
@@ -115,9 +136,10 @@ sub tokenize {
 					$self->token->append_content('%');
 				}
 				else {
-					$self->_set_is_block_escaping(true);
+					$self->_toggle_escape;					
 					$self->_inc_pointer;
 				}
+				next;
 			}
 
 			if ($char =~ /[\*\/_]/ && $self->_peek_match($char)) {										
@@ -152,6 +174,26 @@ sub tokenize {
 		# --------------------------------------------------
 
 		if ($state eq 'newline') {
+			if ($self->is_block_escaping) {
+				if ($char eq '%') {
+					if (!defined $self->_peek) { #eof
+						$self->_switch_state('eof');
+						$self->_create_token('text');
+						$self->token->append_content('%');
+					}
+					else {
+						$self->_toggle_escape;
+						$self->_inc_pointer;
+					}
+					next;
+				}
+
+				$self->_switch_state('text');
+				$self->_create_token('text');
+				$self->token->append_content($char);
+				next;
+			}
+
 			if ($char eq "\\") {				
 				my $next_char = $self->_peek;
 				if (!defined $next_char) { # eof
@@ -174,9 +216,10 @@ sub tokenize {
 					$self->token->append_content('%');
 				}
 				else {
-					$self->_set_is_block_escaping(true);
+					$self->_toggle_escape;
 					$self->_inc_pointer;
 				}
+				next;
 			}
 
             if ($char eq '=') {
@@ -265,6 +308,24 @@ sub tokenize {
 		# --------------------------------------------------
 
 		if ($state eq 'text') {
+			if ($self->is_block_escaping) {
+				if ($char eq '%') {				
+					my $next_char = $self->_peek;
+					if (!defined $next_char) { # eof
+						$self->_switch_state('eof');					
+						$self->token->append_content('%');
+					}
+					else {					
+						$self->_toggle_escape;
+						$self->_inc_pointer;
+					}
+					next;
+				}	
+
+				$self->token->append_content($char);
+				next;
+			}
+
 			if ($char eq "\\") {				
 				my $next_char = $self->_peek;
 				if (!defined $next_char) { # eof
@@ -285,7 +346,7 @@ sub tokenize {
 					$self->token->append_content('%');
 				}
 				else {					
-					$self->_set_is_block_escaping(true);
+					$self->_toggle_escape;
 					$self->_inc_pointer;
 				}
 				next;
@@ -310,7 +371,7 @@ sub tokenize {
 
 			if ($char eq '[') {
 				if ($self->_peek_match($char)) {
-					$self->_push_state('link_href');
+					$self->_switch_state('link_href');
 					$self->_create_token('link');
 				}
 				else {
@@ -546,6 +607,14 @@ sub _consume_until_not {
 	trace "... consumed ($consumed)!" [TOKENIZE CONSUME_UNTIL];	
 	$self->_dec_pointer;
 	return $consumed;
+}
+
+# ------------------------------------------------------------------------------
+
+sub _toggle_escape {
+	my ($self) = @_;
+	trace "Toggle escape to [%s]", $self->is_block_escaping?'off':'on' [TOKENIZE];
+	$self->_set_is_block_escaping( !$self->is_block_escaping );
 }
 
 # ------------------------------------------------------------------------------

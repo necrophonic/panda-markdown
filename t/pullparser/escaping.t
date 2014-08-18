@@ -34,7 +34,7 @@ sub test_single_escape {
 
 sub test_block_escape {
 	subtest 'test block escape' => sub {
-		plan tests => 1;
+		plan tests => 2;
 
 		$pp->tokenize('Something %%**escaped//[[%% then something');
 		test_expected_tokens_list( $pp->tokens, [qw|text|]);
