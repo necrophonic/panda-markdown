@@ -162,7 +162,7 @@ sub handle_row {
     else {
         $self->in_row(false);
         $self->_append_html(
-            '<div class="row-'
+            '<div class="clearfix row-'
             .$self->current_row->{columns}
             .'"><span class="column">'
             .$self->current_row->{content}
