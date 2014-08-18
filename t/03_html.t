@@ -17,7 +17,7 @@ plan tests => 12;
 	test_basic_text_with_emphasis();
 	test_basic_link();
 	test_divider();
-	test_headers();
+	 test_headers();
 	test_basic_image_media();
     test_basic_row();
     test_line_breaks();
@@ -87,7 +87,7 @@ sub test_divider {
 
 sub test_headers {
 	subtest 'Headers' => sub {
-		plan tests => 2;
+		plan tests => 3;
 		is $parser->do( '# My Header' ),
 		   '<h1>My Header</h1>',
 		   'level one header';
@@ -95,6 +95,10 @@ sub test_headers {
 		is $parser->do( '#### My Header' ),
 		   '<h4>My Header</h4>',
 		   'level four header';
+
+		is $parser->do( qq|Text\n\n## My Header| ),
+		   '<p>Text</p><h2>My Header</h2>',
+		   'header after break';
 	};
 }
 

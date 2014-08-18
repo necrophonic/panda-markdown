@@ -188,6 +188,7 @@ sub handle_columndivider {
 
 sub handle_linebreak {
 	my ($self) = @_;
+	trace "Handle LINE BREAK" [HTML];
 	$self->_append_html('<br>');
 }
 
@@ -195,8 +196,9 @@ sub handle_linebreak {
 
 sub handle_paragraphbreak {
 	my ($self) = @_;
+	trace "Handle PARAGRAPH BREAK" [HTML];
 	$self->_finalise_paragraph_if_open;
-	$self->_open_paragraph_if_not;
+	#$self->_open_paragraph_if_not;
 }
 
 # ------------------------------------------------------------------------------
