@@ -6,7 +6,7 @@ use Log::Declare;
 
 use Test::More;
 
-plan tests => 11;
+plan tests => 12;
 
 	use_ok 'Text::CaffeinatedMarkup::HTML';
 	new_ok 'Text::CaffeinatedMarkup::HTML';
@@ -22,6 +22,7 @@ plan tests => 11;
     test_basic_row();
     test_line_breaks();
     test_paragraph_breaks();
+    test_escaping();
 
 done_testing();
 
@@ -150,7 +151,7 @@ sub test_line_breaks {
 
 sub test_paragraph_breaks {
 	subtest 'Paragraph Breaks' => sub {
-		plan tests => 2;
+		plan tests => 3;
 		is $parser->do(qq|Something\n\nAfter break|),
 		   q|<p>Something</p><p>After break</p>|,
 		   'single paragraph break';
@@ -158,6 +159,30 @@ sub test_paragraph_breaks {
 		is $parser->do(qq|Something\n\n\n\n\nAfter break|),
 		   q|<p>Something</p><p>After break</p>|,
 		   'elongated paragraph break (multiple collapse to single)';
+
+		is $parser->do(qq|Something\nMore\n\nAfter break|),
+		   q|<p>Something<br>More</p><p>After break</p>|,
+		   'break and paragraph';
+	};
+}
+
+# ------------------------------------------------------------------------------
+
+sub test_escaping {
+	subtest 'Escaping' => sub {
+		plan tests => 2;
+
+		subtest 'Escapes in simple text' => sub {
+			is $parser->do(q|Some \**escaped\** %%text [[]]%%|),
+			   q|<p>Some **escaped** text [[]]</p>|,
+			   'simple single and block escape in text';
+		};		
+
+		subtest 'Escapes with newlines' => sub {
+			is $parser->do(qq|Some \\**escaped\\**\n\%\%text\n\n[[]]\%\%|),
+			   qq|<p>Some **escaped**<br>text\n\n[[]]</p>|,
+			   'simple single and block escape in text with newlines';
+		};		
 	};
 }
 

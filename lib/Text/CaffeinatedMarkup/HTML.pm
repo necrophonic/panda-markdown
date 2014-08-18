@@ -9,7 +9,7 @@ use Log::Declare;
 use boolean;
 
 # To implement
-# * block escape
+# * block escape *
 # * block quote
 # * spacers
 # * list
