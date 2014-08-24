@@ -6,7 +6,7 @@ use Log::Declare;
 
 use Test::More;
 
-plan tests => 12;
+plan tests => 13;
 
 	use_ok 'Text::CaffeinatedMarkup::HTML';
 	new_ok 'Text::CaffeinatedMarkup::HTML';
@@ -23,6 +23,7 @@ plan tests => 12;
     test_line_breaks();
     test_paragraph_breaks();
     test_escaping();
+    test_block_quoting();
 
 done_testing();
 
@@ -191,6 +192,22 @@ sub test_escaping {
 			   qq|<p>Some **escaped**<br>text\n\n[[]]</p>|,
 			   'simple single and block escape in text with newlines';
 		};		
+	};
+}
+
+# ------------------------------------------------------------------------------
+
+sub test_block_quoting {
+	subtest 'Block Quoting' => sub {
+		plan tests => 1;
+
+		subtest 'Single line block quote' => sub {
+			plan tests => 1;
+			is $parser->do(qq|  ""Single quote""|),
+			   q|<blockquote><p>Single quote</p></blockquote>|,
+			   'single line block quote with text';
+		};
+
 	};
 }
 

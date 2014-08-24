@@ -27,6 +27,7 @@ has in_underline   => ( is => 'rw' );
 has in_delete      => ( is => 'rw' );
 has in_insert      => ( is => 'rw' );
 has in_row         => ( is => 'rw' );
+has in_block_quote => ( is => 'rw' );
 
 has current_row    => ( is => 'rw' );
 
@@ -49,12 +50,28 @@ sub do {
 	$self->in_delete(false);
 	$self->in_insert(false);
     $self->in_row(false);
+    $self->in_block_quote(false);
 
 	info "Starting with HTML [%s]", $self->html;
 
 	$self->tokenize( $cml );
 
 	return $self->html;
+}
+
+# ------------------------------------------------------------------------------
+
+sub handle_blockquote {
+	my ($self) = @_;
+	if ($self->in_block_quote) {
+		$self->_finalise_paragraph_if_open;
+		$self->_append_html('</blockquote>');
+		$self->in_block_quote(false);
+	}
+	else {
+		$self->_append_html('<blockquote>');
+		$self->in_block_quote(true);
+	}
 }
 
 # ------------------------------------------------------------------------------

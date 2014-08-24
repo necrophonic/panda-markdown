@@ -181,6 +181,7 @@ sub tokenize {
 
             if ($char eq "\n") {
                 $self->_push_state('newline');
+                $self->_set_indent(0);
                 next;
             }
 
@@ -291,6 +292,7 @@ sub tokenize {
 				$self->_create_and_emit_token('paragraph_break');
 				$self->_pop_state;
 				$self->_consume_until_not("\n");
+				$self->_set_indent(0);
 				next;				
 			}
 
@@ -386,6 +388,7 @@ sub tokenize {
 			if ($char eq "\n") {
 				$self->_create_token('line_break');
 				$self->_switch_state('newline');
+				$self->_set_indent(0);
 				next;
 			}
 
@@ -541,6 +544,7 @@ sub tokenize {
 			if ($char eq "\n") {
 				$self->_emit_token;
 				$self->_switch_state('newline');
+				$self->_set_indent(0);
 			}
 			else {
 				$self->token->append_content($char);

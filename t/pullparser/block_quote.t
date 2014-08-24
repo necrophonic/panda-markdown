@@ -16,6 +16,7 @@ plan tests => 2;
     my $pp = Text::CaffeinatedMarkup::PullParser->new;
 
     test_blockquote_no_cite();
+    #test_blockquote_with_cite();
 
 done_testing();
 
@@ -42,4 +43,12 @@ sub test_blockquote_no_cite {
         is $pp->tokens->[1]->content, 'This is a single line quote ', 'content as expected';
         is $pp->tokens->[3]->content, 'with emphasis', 'content as expected';
     };
+}
+
+sub test_blockquote_with_cite {
+	subtest 'test blockquote with cite' => sub {
+		$pp->tokenize(qq|  ""This is a single line quote""\n  -- with cite|);
+		test_expected_tokens_list( $pp->tokens, [qw|block_quote text block_quote|] );
+        is $pp->tokens->[1]->content, 'This is a single line quote', 'content as expected';
+	};
 }
