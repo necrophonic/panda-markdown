@@ -9,6 +9,7 @@ use Log::Declare;
 
 use Text::CaffeinatedMarkup::PullParser::ParagraphBreakToken;
 use Text::CaffeinatedMarkup::PullParser::ColumnDividerToken;
+use Text::CaffeinatedMarkup::PullParser::BlockQuoteToken;
 use Text::CaffeinatedMarkup::PullParser::LineBreakToken;
 use Text::CaffeinatedMarkup::PullParser::EmphasisToken;
 use Text::CaffeinatedMarkup::PullParser::DividerToken;
@@ -17,6 +18,7 @@ use Text::CaffeinatedMarkup::PullParser::MediaToken;
 use Text::CaffeinatedMarkup::PullParser::TextToken;
 use Text::CaffeinatedMarkup::PullParser::LinkToken;
 use Text::CaffeinatedMarkup::PullParser::RowToken;
+
 
 # TODO check eof error states
 
@@ -33,9 +35,11 @@ has 'chars'   => ( is => 'rwp' );
 has 'pointer' => ( is => 'rwp' );
 has 'token'   => ( is => 'rwp' );
 has 'tokens'  => ( is => 'rwp', default => sub{[]} );
+has 'indent'  => ( is => 'rwp' );
 
 has 'in_row_context'    => ( is => 'rwp' );
 has 'is_block_escaping' => ( is => 'rwp' );
+has 'is_block_quoting'  => ( is => 'rwp' );
 
 # ------------------------------------------------------------------------------
 
@@ -80,6 +84,7 @@ sub tokenize {
     $self->_set_state_stack(['newline','none']);
     $self->_set_in_row_context(false);
     $self->_set_is_block_escaping(false);
+    $self->_set_indent(0);
 
 	while ( $self->pointer < $#{$self->chars} ) {
 
@@ -138,6 +143,12 @@ sub tokenize {
 					$self->_toggle_escape;					
 					$self->_inc_pointer;
 				}
+				next;
+			}
+
+			if ($char eq '"' && $self->_peek_match($char)) {
+				$self->_create_and_emit_token('block_quote');
+				$self->_set_is_block_quoting( !$self->is_block_quoting );
 				next;
 			}
 
@@ -228,6 +239,17 @@ sub tokenize {
 					$self->_toggle_escape;
 					$self->_inc_pointer;
 				}
+				next;
+			}
+
+			if ($char eq ' ') {
+				$self->_set_indent($self->indent+1);
+				next;
+			}
+
+			if ($char eq '"' && $self->_peek_match($char)) {
+				$self->_create_and_emit_token('block_quote');
+				$self->_set_is_block_quoting( !$self->is_block_quoting );
 				next;
 			}
 
@@ -364,6 +386,12 @@ sub tokenize {
 			if ($char eq "\n") {
 				$self->_create_token('line_break');
 				$self->_switch_state('newline');
+				next;
+			}
+
+			if ($char eq '"' && $self->_peek_match($char)) {
+				$self->_create_and_emit_token('block_quote');
+				$self->_set_is_block_quoting(false);
 				next;
 			}
 			
@@ -556,6 +584,7 @@ sub _create_token {
     /^row_(start|end)$/ && do { $t = Text::CaffeinatedMarkup::PullParser::RowToken->new($1) };
     /^column_divider$/  && do { $t = Text::CaffeinatedMarkup::PullParser::ColumnDividerToken->new };
 	/^paragraph_break$/ && do { $t = Text::CaffeinatedMarkup::PullParser::ParagraphBreakToken->new };	
+	/^block_quote$/     && do { $t = Text::CaffeinatedMarkup::PullParser::BlockQuoteToken->new };	
 
 	if ($t) {
 		trace "Created new token [%s] [%s]", $requested, r:$t [TOKENIZE];
@@ -722,5 +751,6 @@ sub handle_linebreak      {$all->($_[0])};
 sub handle_paragraphbreak {$all->($_[0])};
 sub handle_row  		  {$all->($_[0])};
 sub handle_columndivider  {$all->($_[0])};
+sub handle_blockquote	  {$all->($_[0])};
 
 1;
