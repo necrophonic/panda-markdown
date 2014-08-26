@@ -9,7 +9,6 @@ has type => ( is => 'rwp', required => 1 );
 
 sub BUILDARGS {
 	my ($class, @args) = @_;
-
 	return { type => $args[0] };
 }
 
