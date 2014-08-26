@@ -251,7 +251,12 @@ sub tokenize {
 			if ($char eq '-' && $self->indent && $self->_peek_match(' ')) {
 				$self->_discard_token; # Get rid of newline
 				$self->_create_and_emit_token('uo_list');				
-				#$self->_inc_pointer;
+				next;
+			}
+
+			if ($char =~ /\d/ && $self->indent && $self->_peek_match(' ')) {
+				$self->_discard_token; # Get rid of newline
+				$self->_create_and_emit_token('o_list');				
 				next;
 			}
 

@@ -216,7 +216,7 @@ sub test_block_quoting {
 
 sub test_lists {
 	subtest 'Lists' => sub {
-		plan tests => 2;
+		plan tests => 4;
 
 		is $parser->do(qq|  - Item 1\n  - Item 2|),
 		   q|<ul><li><p>Item 1</p></li><li><p>Item 2</p></li></ul>|,
@@ -226,6 +226,18 @@ sub test_lists {
 		   q|<ul><li><p>Item 1</p></li><li><p><strong>Item</strong> 2</p></li></ul>|,
 		   'simple unordered list with some emphasis';
 
+		is $parser->do(qq|  - Item 1.1\n    - Item 2.1\n  - Item 1.2|),
+		   q|<ul><li><p>Item 1.1</p></li><ul><li><p>Item 2.1</p></li></ul><li><p>Item 1.2</p></li></ul>|,
+		   'simple unordered list with some emphasis';
+
+		is $parser->do(<<EOT
+  - Item 1.1
+    1 Item 2.1
+  - Item 1.2
+EOT
+),
+		   q|<ul><li><p>Item 1.1</p></li><ol><li><p>Item 2.1</p></li></ol><li><p>Item 1.2<br></p></li></ul>|,
+		   'simple unordered list with some emphasis';
 	};
 }
 

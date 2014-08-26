@@ -32,6 +32,8 @@ has in_list_type       => ( is => 'rw' );
 has in_list_item       => ( is => 'rw' );
 has current_list_level => ( is => 'rw' );
 
+has list_stack	=> ( is => 'rw' );
+
 has current_row    => ( is => 'rw' );
 
 use Readonly;
@@ -58,14 +60,16 @@ sub do {
     $self->in_list_item(false);
     $self->current_list_level(0);
 
+    $self->list_stack([]);
+
 	info "Starting with HTML [%s]", $self->html;
 
 	$self->tokenize( $cml );
 
 	# Finalise
-	$self->_finalise_paragraph_if_open;
-	$self->_close_list_item_if_open;
-	$self->_close_list_if_open;
+	$self->_finalise_paragraph_if_open;	
+
+	$self->_finalise_lists;
 
 	return $self->html;
 }
@@ -80,22 +84,51 @@ sub handle_listitem {
 
 	trace "Handle LIST ITEM [%s] at [%s]", $type, $level [HTML];
 
-	if (!defined $self->in_list_type) {
-		$self->in_list_type( $type );
-		$self->current_list_level($level);
-		$self->_append_html( $type eq 'unordered' ? '<ul>' : '<ol>' ) ;
-		trace "Open new list" [HTML LIST];
+	# Examine the current level (if there is one).
+	# If we're higher then push a new level onto the stack, if the same
+	# then just handle the item, and if lower then pop from the stack.
+	if (!scalar @{$self->list_stack}) {
+		# No current stack - create list and handle item
+		# New list
+		$self->_append_html( $type eq 'unordered' ? '<ul>' : '<ol>' );
+		unshift @{$self->list_stack}, {level=>$level,type=>$type};
+
+		$self->in_list_item(true);
+		$self->_append_html('<li>');	
 	}
+	else {
+		my $last_level = $self->list_stack->[0]->{level};
+		$self->_close_list_item_if_open;
+		
 
-	$self->_close_list_item_if_open;	
+		if ($level > $last_level) {
+			# Go deeper!					
+			
+			$self->_append_html( $type eq 'unordered' ? '<ul>' : '<ol>' );
+			unshift @{$self->list_stack}, {level=>$level,type=>$type};			
 
-	$self->in_list_item(true);
-	$self->_append_html('<li>');
-	
+			$self->_append_html('<li>');
+			$self->in_list_item(true);
+			
+		}
+		elsif ($level < $last_level) {
+			# Come up!
+			# ...
+			my $closing = shift @{$self->list_stack};
+
+			$self->_append_html( $closing->{type} eq 'unordered' ? '</ul>' : '</ol>' );
+			$self->_append_html('<li>');
+			$self->in_list_item(true);
+
+		}
+		else {
+			# Same level
+			$self->_close_list_item_if_open;
+			$self->in_list_item(true);
+			$self->_append_html('<li>');
+		}
+	}
 }
-
-# TODO close list if open
-# TODO close list item if open where appropriate
 
 # ------------------------------------------------------------------------------
 
@@ -303,14 +336,18 @@ sub _close_list_item_if_open {
 
 # ------------------------------------------------------------------------------
 
-sub _close_list_if_open {
+# Called to clean up any open lists
+sub _finalise_lists {
 	my ($self) = @_;
-	if (defined $self->in_list_type) {
-		$self->_close_list_item_if_open;
-		trace "Close current list" [HTML LIST];
-		$self->_append_html( $self->in_list_type eq 'unordered' ? '</ul>' : '</ol>' );
-		$self->in_list_type(undef);
-	}
+
+	$self->_close_list_item_if_open;
+
+	while(@{$self->list_stack}) {
+		my $close = shift @{$self->list_stack};
+		trace "Finalise list [%s]", $close->{type} [HTML LIST];
+		$self->_append_html( $close->{type} eq 'unordered' ? '</ul>' : '</ol>' );
+	}	
+
 }
 
 # ------------------------------------------------------------------------------
