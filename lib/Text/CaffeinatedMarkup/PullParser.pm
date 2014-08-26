@@ -23,7 +23,6 @@ use Text::CaffeinatedMarkup::PullParser::RowToken;
 # TODO check eof error states
 
 # To implement
-# * block quote
 # * spacers
 # * list
 # * table

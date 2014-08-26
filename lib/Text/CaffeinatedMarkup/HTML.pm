@@ -9,7 +9,6 @@ use Log::Declare;
 use boolean;
 
 # To implement
-# * block quote
 # * spacers
 # * list
 # * table
