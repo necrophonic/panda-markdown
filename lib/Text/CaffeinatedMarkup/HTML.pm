@@ -9,9 +9,8 @@ use Log::Declare;
 use boolean;
 
 # To implement
-# * block quote
 # * spacers
-# * list
+# * data list
 # * table
 # * block code
 # * inline code
@@ -27,6 +26,13 @@ has in_underline   => ( is => 'rw' );
 has in_delete      => ( is => 'rw' );
 has in_insert      => ( is => 'rw' );
 has in_row         => ( is => 'rw' );
+has in_block_quote => ( is => 'rw' );
+
+has in_list_type       => ( is => 'rw' );
+has in_list_item       => ( is => 'rw' );
+has current_list_level => ( is => 'rw' );
+
+has list_stack	=> ( is => 'rw' );
 
 has current_row    => ( is => 'rw' );
 
@@ -49,12 +55,97 @@ sub do {
 	$self->in_delete(false);
 	$self->in_insert(false);
     $self->in_row(false);
+    $self->in_block_quote(false);
+    $self->in_list_type(undef);
+    $self->in_list_item(false);
+    $self->current_list_level(0);
+
+    $self->list_stack([]);
 
 	info "Starting with HTML [%s]", $self->html;
 
 	$self->tokenize( $cml );
 
+	# Finalise
+	$self->_finalise_paragraph_if_open;	
+
+	$self->_finalise_lists;
+
 	return $self->html;
+}
+
+# ------------------------------------------------------------------------------
+
+sub handle_listitem {
+	my ($self) = @_;
+
+	my $type  = $self->token->type;
+	my $level = $self->token->level;
+
+	trace "Handle LIST ITEM [%s] at [%s]", $type, $level [HTML];
+
+	# Examine the current level (if there is one).
+	# If we're higher then push a new level onto the stack, if the same
+	# then just handle the item, and if lower then pop from the stack.
+	if (!scalar @{$self->list_stack}) {
+		# No current stack - create list and handle item
+		# New list
+		$self->_append_html( $type eq 'unordered' ? '<ul>' : '<ol>' );
+		unshift @{$self->list_stack}, {level=>$level,type=>$type};
+
+		$self->in_list_item(true);
+		$self->_append_html('<li>');	
+	}
+	else {
+		my $last_level = $self->list_stack->[0]->{level};
+		$self->_close_list_item_if_open;
+		
+
+		if ($level > $last_level) {
+			# Go deeper!					
+			
+			$self->_append_html( $type eq 'unordered' ? '<ul>' : '<ol>' );
+			unshift @{$self->list_stack}, {level=>$level,type=>$type};			
+
+			$self->_append_html('<li>');
+			$self->in_list_item(true);
+			
+		}
+		elsif ($level < $last_level) {
+			# Come up!
+			# ...
+			my $closing = shift @{$self->list_stack};
+
+			$self->_append_html( $closing->{type} eq 'unordered' ? '</ul>' : '</ol>' );
+			$self->_append_html('<li>');
+			$self->in_list_item(true);
+
+		}
+		else {
+			# Same level
+			$self->_close_list_item_if_open;
+			$self->in_list_item(true);
+			$self->_append_html('<li>');
+		}
+	}
+}
+
+# ------------------------------------------------------------------------------
+
+sub handle_blockquote {
+	my ($self) = @_;
+
+	trace "Handle BLOCKQUOTE", [HTML];
+
+	if ($self->in_block_quote) {
+		$self->_finalise_paragraph_if_open;
+		$self->_append_html('</blockquote>');
+		$self->in_block_quote(false);
+	}
+	else {
+		$self->_append_html('<blockquote>');
+		$self->in_block_quote(true);
+	}
 }
 
 # ------------------------------------------------------------------------------
@@ -227,16 +318,47 @@ sub _finalise_paragraph_if_open {
     if ($self->in_paragraph) {
         $self->_append_html( $PARAGRAPH_END );
         $self->in_paragraph(false);
+        trace "Closed paragraph" [HTML PARAGRAPH];
     }
+}
+
+# ------------------------------------------------------------------------------
+
+sub _close_list_item_if_open {
+	my ($self) = @_;
+	if ($self->in_list_item) {
+		$self->_finalise_paragraph_if_open;
+		trace "Close current list item" [HTML LIST];
+		$self->_append_html( '</li>' );
+		$self->in_list_item(false);
+	}
+}
+
+# ------------------------------------------------------------------------------
+
+# Called to clean up any open lists
+sub _finalise_lists {
+	my ($self) = @_;
+
+	$self->_close_list_item_if_open;
+
+	while(@{$self->list_stack}) {
+		my $close = shift @{$self->list_stack};
+		trace "Finalise list [%s]", $close->{type} [HTML LIST];
+		$self->_append_html( $close->{type} eq 'unordered' ? '</ul>' : '</ol>' );
+	}	
+
 }
 
 # ------------------------------------------------------------------------------
 
 sub _open_paragraph_if_not {
     my ($self) = @_;
+
     unless ($self->in_paragraph) {
         $self->_append_html( $PARAGRAPH_START );
         $self->in_paragraph(true);
+        trace "Opened paragraph" [HTML PARAGRAPH];
     }
 }
 

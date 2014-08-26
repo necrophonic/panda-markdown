@@ -9,7 +9,9 @@ use Log::Declare;
 
 use Text::CaffeinatedMarkup::PullParser::ParagraphBreakToken;
 use Text::CaffeinatedMarkup::PullParser::ColumnDividerToken;
+use Text::CaffeinatedMarkup::PullParser::BlockQuoteToken;
 use Text::CaffeinatedMarkup::PullParser::LineBreakToken;
+use Text::CaffeinatedMarkup::PullParser::ListItemToken;
 use Text::CaffeinatedMarkup::PullParser::EmphasisToken;
 use Text::CaffeinatedMarkup::PullParser::DividerToken;
 use Text::CaffeinatedMarkup::PullParser::HeaderToken;
@@ -18,12 +20,12 @@ use Text::CaffeinatedMarkup::PullParser::TextToken;
 use Text::CaffeinatedMarkup::PullParser::LinkToken;
 use Text::CaffeinatedMarkup::PullParser::RowToken;
 
+
 # TODO check eof error states
 
 # To implement
-# * block quote
 # * spacers
-# * list
+# * data list
 # * table
 # * block code
 # * inline code
@@ -33,9 +35,11 @@ has 'chars'   => ( is => 'rwp' );
 has 'pointer' => ( is => 'rwp' );
 has 'token'   => ( is => 'rwp' );
 has 'tokens'  => ( is => 'rwp', default => sub{[]} );
+has 'indent'  => ( is => 'rwp' );
 
 has 'in_row_context'    => ( is => 'rwp' );
 has 'is_block_escaping' => ( is => 'rwp' );
+has 'is_block_quoting'  => ( is => 'rwp' );
 
 # ------------------------------------------------------------------------------
 
@@ -80,6 +84,7 @@ sub tokenize {
     $self->_set_state_stack(['newline','none']);
     $self->_set_in_row_context(false);
     $self->_set_is_block_escaping(false);
+    $self->_set_indent(0);
 
 	while ( $self->pointer < $#{$self->chars} ) {
 
@@ -141,6 +146,12 @@ sub tokenize {
 				next;
 			}
 
+			if ($char eq '"' && $self->_peek_match($char)) {
+				$self->_create_and_emit_token('block_quote');
+				$self->_set_is_block_quoting( !$self->is_block_quoting );
+				next;
+			}
+
 			if ($char eq '#') {				
 				my $consumed = $self->_consume_until(' ');
 				$self->_create_token('header');
@@ -170,6 +181,7 @@ sub tokenize {
 
             if ($char eq "\n") {
                 $self->_push_state('newline');
+                $self->_set_indent(0);
                 next;
             }
 
@@ -231,6 +243,29 @@ sub tokenize {
 				next;
 			}
 
+			if ($char eq ' ') {
+				$self->_set_indent($self->indent+1);
+				next;
+			}
+
+			if ($char eq '-' && $self->indent && $self->_peek_match(' ')) {
+				$self->_discard_token; # Get rid of newline
+				$self->_create_and_emit_token('uo_list');				
+				next;
+			}
+
+			if ($char =~ /\d/ && $self->indent && $self->_peek_match(' ')) {
+				$self->_discard_token; # Get rid of newline
+				$self->_create_and_emit_token('o_list');				
+				next;
+			}
+
+			if ($char eq '"' && $self->_peek_match($char)) {
+				$self->_create_and_emit_token('block_quote');
+				$self->_set_is_block_quoting( !$self->is_block_quoting );
+				next;
+			}
+
             if ($char eq '=') {
                 if ($self->_peek_match($char)) {
 
@@ -269,6 +304,7 @@ sub tokenize {
 				$self->_create_and_emit_token('paragraph_break');
 				$self->_pop_state;
 				$self->_consume_until_not("\n");
+				$self->_set_indent(0);
 				next;				
 			}
 
@@ -364,6 +400,13 @@ sub tokenize {
 			if ($char eq "\n") {
 				$self->_create_token('line_break');
 				$self->_switch_state('newline');
+				$self->_set_indent(0);
+				next;
+			}
+
+			if ($char eq '"' && $self->_peek_match($char)) {
+				$self->_create_and_emit_token('block_quote');
+				$self->_set_is_block_quoting(false);
 				next;
 			}
 			
@@ -513,6 +556,7 @@ sub tokenize {
 			if ($char eq "\n") {
 				$self->_emit_token;
 				$self->_switch_state('newline');
+				$self->_set_indent(0);
 			}
 			else {
 				$self->token->append_content($char);
@@ -556,6 +600,9 @@ sub _create_token {
     /^row_(start|end)$/ && do { $t = Text::CaffeinatedMarkup::PullParser::RowToken->new($1) };
     /^column_divider$/  && do { $t = Text::CaffeinatedMarkup::PullParser::ColumnDividerToken->new };
 	/^paragraph_break$/ && do { $t = Text::CaffeinatedMarkup::PullParser::ParagraphBreakToken->new };	
+	/^block_quote$/     && do { $t = Text::CaffeinatedMarkup::PullParser::BlockQuoteToken->new };	
+	/^uo_list$/         && do { $t = Text::CaffeinatedMarkup::PullParser::ListItemToken->new( 'unordered', $self->indent) };	
+	/^o_list$/          && do { $t = Text::CaffeinatedMarkup::PullParser::ListItemToken->new( 'ordered',   $self->indent) };	
 
 	if ($t) {
 		trace "Created new token [%s] [%s]", $requested, r:$t [TOKENIZE];
@@ -722,5 +769,7 @@ sub handle_linebreak      {$all->($_[0])};
 sub handle_paragraphbreak {$all->($_[0])};
 sub handle_row  		  {$all->($_[0])};
 sub handle_columndivider  {$all->($_[0])};
+sub handle_blockquote	  {$all->($_[0])};
+sub handle_listitem		  {$all->($_[0])};
 
 1;
