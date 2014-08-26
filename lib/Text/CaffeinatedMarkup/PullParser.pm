@@ -11,6 +11,7 @@ use Text::CaffeinatedMarkup::PullParser::ParagraphBreakToken;
 use Text::CaffeinatedMarkup::PullParser::ColumnDividerToken;
 use Text::CaffeinatedMarkup::PullParser::BlockQuoteToken;
 use Text::CaffeinatedMarkup::PullParser::LineBreakToken;
+use Text::CaffeinatedMarkup::PullParser::ListItemToken;
 use Text::CaffeinatedMarkup::PullParser::EmphasisToken;
 use Text::CaffeinatedMarkup::PullParser::DividerToken;
 use Text::CaffeinatedMarkup::PullParser::HeaderToken;
@@ -244,6 +245,13 @@ sub tokenize {
 
 			if ($char eq ' ') {
 				$self->_set_indent($self->indent+1);
+				next;
+			}
+
+			if ($char eq '-' && $self->indent && $self->_peek_match(' ')) {
+				$self->_discard_token; # Get rid of newline
+				$self->_create_and_emit_token('uo_list');				
+				#$self->_inc_pointer;
 				next;
 			}
 
@@ -588,6 +596,8 @@ sub _create_token {
     /^column_divider$/  && do { $t = Text::CaffeinatedMarkup::PullParser::ColumnDividerToken->new };
 	/^paragraph_break$/ && do { $t = Text::CaffeinatedMarkup::PullParser::ParagraphBreakToken->new };	
 	/^block_quote$/     && do { $t = Text::CaffeinatedMarkup::PullParser::BlockQuoteToken->new };	
+	/^uo_list$/         && do { $t = Text::CaffeinatedMarkup::PullParser::ListItemToken->new( 'unordered', $self->indent) };	
+	/^o_list$/          && do { $t = Text::CaffeinatedMarkup::PullParser::ListItemToken->new( 'ordered',   $self->indent) };	
 
 	if ($t) {
 		trace "Created new token [%s] [%s]", $requested, r:$t [TOKENIZE];
@@ -755,5 +765,6 @@ sub handle_paragraphbreak {$all->($_[0])};
 sub handle_row  		  {$all->($_[0])};
 sub handle_columndivider  {$all->($_[0])};
 sub handle_blockquote	  {$all->($_[0])};
+sub handle_listitem		  {$all->($_[0])};
 
 1;

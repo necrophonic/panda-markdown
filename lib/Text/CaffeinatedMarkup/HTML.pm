@@ -28,6 +28,10 @@ has in_insert      => ( is => 'rw' );
 has in_row         => ( is => 'rw' );
 has in_block_quote => ( is => 'rw' );
 
+has in_list_type       => ( is => 'rw' );
+has in_list_item       => ( is => 'rw' );
+has current_list_level => ( is => 'rw' );
+
 has current_row    => ( is => 'rw' );
 
 use Readonly;
@@ -50,18 +54,56 @@ sub do {
 	$self->in_insert(false);
     $self->in_row(false);
     $self->in_block_quote(false);
+    $self->in_list_type(undef);
+    $self->in_list_item(false);
+    $self->current_list_level(0);
 
 	info "Starting with HTML [%s]", $self->html;
 
 	$self->tokenize( $cml );
+
+	# Finalise
+	$self->_finalise_paragraph_if_open;
+	$self->_close_list_item_if_open;
+	$self->_close_list_if_open;
 
 	return $self->html;
 }
 
 # ------------------------------------------------------------------------------
 
+sub handle_listitem {
+	my ($self) = @_;
+
+	my $type  = $self->token->type;
+	my $level = $self->token->level;
+
+	trace "Handle LIST ITEM [%s] at [%s]", $type, $level [HTML];
+
+	if (!defined $self->in_list_type) {
+		$self->in_list_type( $type );
+		$self->current_list_level($level);
+		$self->_append_html( $type eq 'unordered' ? '<ul>' : '<ol>' ) ;
+		trace "Open new list" [HTML LIST];
+	}
+
+	$self->_close_list_item_if_open;	
+
+	$self->in_list_item(true);
+	$self->_append_html('<li>');
+	
+}
+
+# TODO close list if open
+# TODO close list item if open where appropriate
+
+# ------------------------------------------------------------------------------
+
 sub handle_blockquote {
 	my ($self) = @_;
+
+	trace "Handle BLOCKQUOTE", [HTML];
+
 	if ($self->in_block_quote) {
 		$self->_finalise_paragraph_if_open;
 		$self->_append_html('</blockquote>');
@@ -243,16 +285,43 @@ sub _finalise_paragraph_if_open {
     if ($self->in_paragraph) {
         $self->_append_html( $PARAGRAPH_END );
         $self->in_paragraph(false);
+        trace "Closed paragraph" [HTML PARAGRAPH];
     }
+}
+
+# ------------------------------------------------------------------------------
+
+sub _close_list_item_if_open {
+	my ($self) = @_;
+	if ($self->in_list_item) {
+		$self->_finalise_paragraph_if_open;
+		trace "Close current list item" [HTML LIST];
+		$self->_append_html( '</li>' );
+		$self->in_list_item(false);
+	}
+}
+
+# ------------------------------------------------------------------------------
+
+sub _close_list_if_open {
+	my ($self) = @_;
+	if (defined $self->in_list_type) {
+		$self->_close_list_item_if_open;
+		trace "Close current list" [HTML LIST];
+		$self->_append_html( $self->in_list_type eq 'unordered' ? '</ul>' : '</ol>' );
+		$self->in_list_type(undef);
+	}
 }
 
 # ------------------------------------------------------------------------------
 
 sub _open_paragraph_if_not {
     my ($self) = @_;
+
     unless ($self->in_paragraph) {
         $self->_append_html( $PARAGRAPH_START );
         $self->in_paragraph(true);
+        trace "Opened paragraph" [HTML PARAGRAPH];
     }
 }
 

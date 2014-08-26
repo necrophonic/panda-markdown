@@ -6,7 +6,7 @@ use Log::Declare;
 
 use Test::More;
 
-plan tests => 13;
+plan tests => 14;
 
 	use_ok 'Text::CaffeinatedMarkup::HTML';
 	new_ok 'Text::CaffeinatedMarkup::HTML';
@@ -24,6 +24,7 @@ plan tests => 13;
     test_paragraph_breaks();
     test_escaping();
     test_block_quoting();
+    test_lists();
 
 done_testing();
 
@@ -207,6 +208,23 @@ sub test_block_quoting {
 			   q|<blockquote><p>Single quote</p></blockquote>|,
 			   'single line block quote with text';
 		};
+
+	};
+}
+
+# ------------------------------------------------------------------------------
+
+sub test_lists {
+	subtest 'Lists' => sub {
+		plan tests => 2;
+
+		is $parser->do(qq|  - Item 1\n  - Item 2|),
+		   q|<ul><li><p>Item 1</p></li><li><p>Item 2</p></li></ul>|,
+		   'simple unordered list';
+
+		is $parser->do(qq|  - Item 1\n  - **Item** 2|),
+		   q|<ul><li><p>Item 1</p></li><li><p><strong>Item</strong> 2</p></li></ul>|,
+		   'simple unordered list with some emphasis';
 
 	};
 }
