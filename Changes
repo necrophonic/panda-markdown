@@ -1,3 +1,7 @@
+0.22 2014-08-26
+	- Adds basic list (ordered and unordered) support
+	- Adds support for blockquote
+
 0.21 2014-08-18
 	- Changed pull- to pulled- in classes to avoid bootstrap clash
 
