@@ -10,7 +10,7 @@ use boolean;
 
 # To implement
 # * spacers
-# * list
+# * data list
 # * table
 # * block code
 # * inline code
