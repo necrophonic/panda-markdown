@@ -301,8 +301,7 @@ sub tokenize {
 
 			if ($char eq "\n") {
 				$self->_discard_token;
-				$self->_create_and_emit_token('paragraph_break');
-				$self->_pop_state;
+				$self->_create_and_emit_token('paragraph_break');				
 				$self->_consume_until_not("\n");
 				$self->_set_indent(0);
 				next;				

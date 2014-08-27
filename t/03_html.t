@@ -216,11 +216,15 @@ sub test_block_quoting {
 
 sub test_lists {
 	subtest 'Lists' => sub {
-		plan tests => 6;
+		plan tests => 7;
 
 		is $parser->do(qq|  - Item 1\n  - Item 2|),
 		   q|<ul><li><p>Item 1</p></li><li><p>Item 2</p></li></ul>|,
 		   'simple unordered list';
+
+		is $parser->do(qq|\n\n  - Item 1\n  - Item 2|),
+		   q|<ul><li><p>Item 1</p></li><li><p>Item 2</p></li></ul>|,
+		   'prefixed by breaks';
 
 		is $parser->do(qq|  - Item 1\n  - **Item** 2|),
 		   q|<ul><li><p>Item 1</p></li><li><p><strong>Item</strong> 2</p></li></ul>|,

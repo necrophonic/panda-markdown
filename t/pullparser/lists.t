@@ -9,7 +9,7 @@ use Helpers;
 use Log::Declare;
 use Text::CaffeinatedMarkup::PullParser;
 
-plan tests => 4;
+plan tests => 5;
 
     can_ok 'Text::CaffeinatedMarkup::PullParser', qw|handle_listitem|;
 
@@ -18,6 +18,8 @@ plan tests => 4;
     test_simple_list();
     test_simple_list_with_emphasis();
     test_simple_list_multilevel();
+
+    test_break_at_start_of_list();
 
 done_testing();
 
@@ -81,3 +83,18 @@ EOT
 }
 
 # ------------------------------------------------------------------------------
+
+sub test_break_at_start_of_list {
+  subtest 'test simple list' => sub {
+        plan tests => 1;
+
+$pp->tokenize(<<EOT
+
+  - Item 1  
+EOT
+);
+    test_expected_tokens_list(
+      $pp->tokens, [qw|paragraph_break list_item text line_break|]
+    );
+  };
+}
