@@ -6,16 +6,13 @@ use Log::Declare;
 
 use Test::More;
 
-plan tests => 14;
+plan tests => 11;
 
 	use_ok 'Text::CaffeinatedMarkup::HTML';
 	new_ok 'Text::CaffeinatedMarkup::HTML';
 
 	my $parser = Text::CaffeinatedMarkup::HTML->new;
-
-	test_basic_text();
-	test_basic_text_with_emphasis();
-	test_basic_link();
+	
 	test_divider();
 	test_headers();
 	test_basic_image_media();
@@ -27,52 +24,6 @@ plan tests => 14;
     test_lists();
 
 done_testing();
-
-# ------------------------------------------------------------------------------
-
-sub test_basic_text {
-	subtest 'Basic text' => sub {
-		plan tests => 1;				
-		my $html   = $parser->do( 'The quick brown foo' );
-		is $html, '<p>The quick brown foo</p>', 'plain text';
-	};
-}
-
-# ------------------------------------------------------------------------------
-
-sub test_basic_text_with_emphasis {
-	subtest 'Basic text with emphasis' => sub {
-		plan tests => 2;
-		
-		is $parser->do( 'The **quick** brown //foo//' ),
-		   '<p>The <strong>quick</strong> brown <em>foo</em></p>',
-		   'plain text with emphasis';		
-
-		is $parser->do( 'The **quick //brown// foo**' ),
-		   '<p>The <strong>quick <em>brown</em> foo</strong></p>',
-		   'plain text with emphasis';		
-	};
-}
-
-# ------------------------------------------------------------------------------
-
-sub test_basic_link {
-	subtest 'Basic link' => sub {
-		plan tests => 3;
-
-		is $parser->do( '[[http://example.com|my site]]' ),
-		   '<p><a href="http://example.com">my site</a></p>',
-		   'basic link';
-
-		is $parser->do( '[[http://example.com]]' ),
-		   '<p><a href="http://example.com">http://example.com</a></p>',
-		   'basic link (no text)';
-
-		is $parser->do( 'Go here [[http://example.com|a]] its great!' ),
-		   '<p>Go here <a href="http://example.com">a</a> its great!</p>',
-		   'basic link in text';
-	};
-}
 
 # ------------------------------------------------------------------------------
 
