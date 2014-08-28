@@ -294,13 +294,6 @@ sub handle_paragraphbreak {
 
 # ------------------------------------------------------------------------------
 
-sub parse_end {
-	my ($self) = @_;
-    $self->_finalise_paragraph_if_open;
-}
-
-# ------------------------------------------------------------------------------
-
 sub _append_html {
 	my ($self, $append) = @_;
     if ($self->in_row) {
