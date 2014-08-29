@@ -28,7 +28,6 @@ has in_insert      => ( is => 'rw' );
 has in_row         => ( is => 'rw' );
 has in_block_quote => ( is => 'rw' );
 
-has in_list_type       => ( is => 'rw' );
 has in_list_item       => ( is => 'rw' );
 has current_list_level => ( is => 'rw' );
 
@@ -55,8 +54,7 @@ sub do {
 	$self->in_delete(false);
 	$self->in_insert(false);
     $self->in_row(false);
-    $self->in_block_quote(false);
-    $self->in_list_type(undef);
+    $self->in_block_quote(false);    
     $self->in_list_item(false);
     $self->current_list_level(0);
 
