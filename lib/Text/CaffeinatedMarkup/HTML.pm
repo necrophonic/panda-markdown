@@ -154,8 +154,7 @@ sub handle_text {
 	my ($self) = @_;
 	my $content = $self->token->content;
 
-    trace "Handle TEXT [%s]", $content [HTML];
-    #return unless $content; # Skip empty content
+    trace "Handle TEXT [%s]", $content [HTML];    
 
 	unless ($self->in_paragraph) {
 		$content = $PARAGRAPH_START . $content;

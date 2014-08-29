@@ -51,6 +51,23 @@ sub handle_emphasis {
 
 # ------------------------------------------------------------------------------
 
+sub handle_linebreak {
+	my ($self) = @_;	
+	return unless $self->in_paragraph;
+	$self->_append_text("\n");
+}
+
+# ------------------------------------------------------------------------------
+
+sub handle_paragraphbreak {
+	my ($self) = @_;
+	return unless $self->in_paragraph;
+	$self->in_paragraph(false);
+	$self->_append_text("\n\n");
+}
+
+# ------------------------------------------------------------------------------
+
 sub _open_paragraph_if_not {
     my ($self) = @_;    
     $self->in_paragraph(true) unless $self->in_paragraph;
