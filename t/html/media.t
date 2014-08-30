@@ -20,7 +20,7 @@ sub test_basic_image_media {
 	subtest 'Basic Images' => sub {
 		plan tests => 3;
 		is $parser->do( '{{image.jpg|<<,W50,H60}}' ),
-		   '<img class="cml-img" src="image.jpg" width="50" height="60" class="cml-pulled-left">',
+		   '<img class="cml-img cml-pulled-left" src="image.jpg" width="50" height="60">',
 		   'simple image';
 
 		is $parser->do( '{{image.jpg}}' ),
