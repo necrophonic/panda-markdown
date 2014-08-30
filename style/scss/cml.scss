@@ -5,8 +5,8 @@
 
 // Images
 .cml-img 			  { box-shadow: 0px 0px 10px #000; margin: 5px; border: 1px solid #888; }
-.cml-img.pulled-left  { margin-right: 10px; }	
-.cml-img.pulled-right { margin-left:  10px; }
+.cml-pulled-left  { margin: 0px 10px 5px 0px; }	
+.cml-pulled-right { margin:  0px 0px 5px 10px; }
 
 // Rows and columns
 .cml-row-2 {
