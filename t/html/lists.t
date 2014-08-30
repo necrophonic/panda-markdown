@@ -6,11 +6,12 @@ use Log::Declare;
 use Test::More;
 use Text::CaffeinatedMarkup::HTML;
 
-plan tests => 1;
+plan tests => 2;
 
 	my $parser = Text::CaffeinatedMarkup::HTML->new;
 
 	test_lists();
+	test_resume_after_list();
 
 done_testing();
 
@@ -65,3 +66,12 @@ EOT
 
 
 # ------------------------------------------------------------------------------
+
+sub test_resume_after_list {
+    subtest 'test resuming after list' => sub {
+
+    	is $parser->do(qq|  - item 1\n\nAfterwards|),
+    	   q|<ul><li><p>item 1</p></li></ul><p>Afterwards</p>|,
+    	   'resume normal after list';
+    };
+}

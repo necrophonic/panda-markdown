@@ -288,7 +288,9 @@ sub handle_linebreak {
 
 sub handle_paragraphbreak {
 	my ($self) = @_;
-	trace "Handle PARAGRAPH BREAK" [HTML];
+	trace "Handle PARAGRAPH BREAK" [HTML];	
+	$self->_close_list_item_if_open;
+	$self->_finalise_lists;
 	$self->_finalise_paragraph_if_open;	
 }
 

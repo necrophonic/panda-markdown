@@ -9,7 +9,7 @@ use Helpers;
 use Log::Declare;
 use Text::CaffeinatedMarkup::PullParser;
 
-plan tests => 5;
+plan tests => 6;
 
     can_ok 'Text::CaffeinatedMarkup::PullParser', qw|handle_listitem|;
 
@@ -18,8 +18,8 @@ plan tests => 5;
     test_simple_list();
     test_simple_list_with_emphasis();
     test_simple_list_multilevel();
-
     test_break_at_start_of_list();
+    test_resume_after_list();
 
 done_testing();
 
@@ -93,8 +93,27 @@ $pp->tokenize(<<EOT
   - Item 1  
 EOT
 );
-    test_expected_tokens_list(
-      $pp->tokens, [qw|paragraph_break list_item text line_break|]
-    );
-  };
+        test_expected_tokens_list(
+            $pp->tokens, [qw|paragraph_break list_item text line_break|]
+        );
+    };
 }
+
+# ------------------------------------------------------------------------------
+
+sub test_resume_after_list {
+    subtest 'test resuming after list' => sub {
+
+$pp->tokenize(<<EOT
+  - item 1
+
+Afterwards
+EOT
+);
+      test_expected_tokens_list(
+          $pp->tokens, [qw|list_item text paragraph_break text line_break|]
+      );
+    };
+}
+
+# ------------------------------------------------------------------------------
