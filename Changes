@@ -1,3 +1,7 @@
+XXX
+	- Fixes missing handling of deleted and inserted emphasis
+	- Fixes some bugs with list parsing
+
 0.22 2014-08-26
 	- Adds basic list (ordered and unordered) support
 	- Adds support for blockquote
