@@ -28,7 +28,7 @@ sub test_basic_row {
            'two column row with emphasis';
 
         is $parser->do(qq|==\nFirst\n--\n{{image.jpg}}\n==|),
-           q|<div class="clearfix cml-row cml-row-2"><span><p>First</p></span><span><img src="image.jpg"></span></div>|,
+           q|<div class="clearfix cml-row cml-row-2"><span><p>First</p></span><span><img class="cml-img" src="image.jpg"></span></div>|,
            'two column row with image';
 
         is $parser->do(qq|First\n==\nThen a row\n==|),

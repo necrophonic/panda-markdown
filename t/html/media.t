@@ -20,15 +20,15 @@ sub test_basic_image_media {
 	subtest 'Basic Images' => sub {
 		plan tests => 3;
 		is $parser->do( '{{image.jpg|<<,W50,H60}}' ),
-		   '<img src="image.jpg" width="50" height="60" class="cml-pulled-left">',
+		   '<img class="cml-img" src="image.jpg" width="50" height="60" class="cml-pulled-left">',
 		   'simple image';
 
 		is $parser->do( '{{image.jpg}}' ),
-		   '<img src="image.jpg">',
+		   '<img class="cml-img" src="image.jpg">',
 		   'simple image with no options';
 
 		is $parser->do( 'See this {{image.jpg}}' ),
-		   '<p>See this <img src="image.jpg"></p>',
+		   '<p>See this <img class="cml-img" src="image.jpg"></p>',
 		   'simple image with no options in paragraph';
 	};
 }

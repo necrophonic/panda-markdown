@@ -52,7 +52,7 @@ EOT
   - {{dog.jpg}}
 EOT
 ),
-		   q|<ul><li class="cml-list-item"><img src="cat.jpg"></li><li class="cml-list-item"><img src="dog.jpg"></li></ul>|,
+		   q|<ul><li class="cml-list-item"><img class="cml-img" src="cat.jpg"></li><li class="cml-list-item"><img class="cml-img" src="dog.jpg"></li></ul>|,
 		   'list of images';
 
 		is $parser->do(<<EOT
