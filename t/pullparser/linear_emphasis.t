@@ -8,12 +8,13 @@ use Helpers;
 
 use Text::CaffeinatedMarkup::PullParser;
 
-plan tests => 2;
+plan tests => 3;
 
     my $pp = Text::CaffeinatedMarkup::PullParser->new;
 
     test_simple_mixed_emphasis();
     test_emphasis_at_start_of_parse();
+    test_each();
 
 done_testing();
 
@@ -45,6 +46,44 @@ sub test_emphasis_at_start_of_parse {
     	is $pp->tokens->[1]->content, 'Yay!';
     	is $pp->tokens->[0]->type,    'strong';
     	is $pp->tokens->[2]->type,    'strong';
+    };
+}
+
+# ------------------------------------------------------------------------------
+
+sub test_each {
+    subtest 'Test each type' => sub {
+        plan tests => 20;
+
+        $pp->tokenize('**text**');
+        test_expected_tokens_list( $pp->tokens, [qw|emphasis text emphasis|] );
+        is $pp->tokens->[1]->content, 'text';
+        is $pp->tokens->[0]->type,    'strong';
+        is $pp->tokens->[2]->type,    'strong';
+
+        $pp->tokenize('//text//');
+        test_expected_tokens_list( $pp->tokens, [qw|emphasis text emphasis|] );
+        is $pp->tokens->[1]->content, 'text';
+        is $pp->tokens->[0]->type,    'emphasis';
+        is $pp->tokens->[2]->type,    'emphasis';
+
+        $pp->tokenize('__text__');
+        test_expected_tokens_list( $pp->tokens, [qw|emphasis text emphasis|] );
+        is $pp->tokens->[1]->content, 'text';
+        is $pp->tokens->[0]->type,    'underline';
+        is $pp->tokens->[2]->type,    'underline';
+
+        $pp->tokenize('++text++');
+        test_expected_tokens_list( $pp->tokens, [qw|emphasis text emphasis|] );
+        is $pp->tokens->[1]->content, 'text';
+        is $pp->tokens->[0]->type,    'insert';
+        is $pp->tokens->[2]->type,    'insert';
+
+        $pp->tokenize('--text--');
+        test_expected_tokens_list( $pp->tokens, [qw|emphasis text emphasis|] );
+        is $pp->tokens->[1]->content, 'text';
+        is $pp->tokens->[0]->type,    'delete';
+        is $pp->tokens->[2]->type,    'delete';
     };
 }
 

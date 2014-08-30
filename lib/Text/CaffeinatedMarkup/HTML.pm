@@ -94,7 +94,7 @@ sub handle_listitem {
 		unshift @{$self->list_stack}, {level=>$level,type=>$type};
 
 		$self->in_list_item(true);
-		$self->_append_html('<li>');	
+		$self->_append_html('<li class="cml-list-item">');	
 	}
 	else {
 		my $last_level = $self->list_stack->[0]->{level};
@@ -107,7 +107,7 @@ sub handle_listitem {
 			$self->_append_html( $type eq 'unordered' ? '<ul>' : '<ol>' );
 			unshift @{$self->list_stack}, {level=>$level,type=>$type};			
 
-			$self->_append_html('<li>');
+			$self->_append_html('<li class="cml-list-item">');
 			$self->in_list_item(true);
 			
 		}
@@ -117,7 +117,7 @@ sub handle_listitem {
 			my $closing = shift @{$self->list_stack};
 
 			$self->_append_html( $closing->{type} eq 'unordered' ? '</ul>' : '</ol>' );
-			$self->_append_html('<li>');
+			$self->_append_html('<li class="cml-list-item">');
 			$self->in_list_item(true);
 
 		}
@@ -125,7 +125,7 @@ sub handle_listitem {
 			# Same level
 			$self->_close_list_item_if_open;
 			$self->in_list_item(true);
-			$self->_append_html('<li>');
+			$self->_append_html('<li class="cml-list-item">');
 		}
 	}
 }
@@ -143,7 +143,7 @@ sub handle_blockquote {
 		$self->in_block_quote(false);
 	}
 	else {
-		$self->_append_html('<blockquote>');
+		$self->_append_html('<blockquote class="cml-blockquote">');
 		$self->in_block_quote(true);
 	}
 }
@@ -183,7 +183,7 @@ sub handle_emphasis {
 
     $self->_open_paragraph_if_not;
 	$self->_parse_error('bad emphasis tag map in html') unless $tag;
-	$self->_append_html( $self->$access ? "</$tag>" : "<$tag>" );
+	$self->_append_html( $self->$access ? "</$tag>" : "<$tag class=\"cml-$tag\">" );
 	$self->$access( !$self->$access );
 }
 
@@ -210,13 +210,13 @@ sub handle_media {
 
 	my $class  = '';
 	if ($_ = $self->token->align) {
-		/^left$/    && do { $class=' class="pulled-left"' };
-		/^right$/   && do { $class=' class="pulled-right"' };
+		/^left$/    && do { $class=' class="cml-pulled-left"' };
+		/^right$/   && do { $class=' class="cml-pulled-right"' };
 		/^stretch$/ && do { $class=' class="stretch"' };
 		/^center$/  && do { $class=' class="center"' };
 	}
 
-	$self->_append_html(qq|<img src="$src"$width$height$class>|);
+	$self->_append_html(qq|<img class="cml-img" src="$src"$width$height$class>|);
 }
 
 # ------------------------------------------------------------------------------
@@ -253,9 +253,9 @@ sub handle_row {
     else {
         $self->in_row(false);
         $self->_append_html(
-            '<div class="clearfix row-'
+            '<div class="clearfix cml-row cml-row-'
             .$self->current_row->{columns}
-            .'"><span class="column">'
+            .'"><span>'
             .$self->current_row->{content}
             .'</span></div>'
         );
@@ -273,7 +273,7 @@ sub handle_columndivider {
     }
     $self->current_row->{columns}++;
     $self->_finalise_paragraph_if_open;
-    $self->_append_html( '</span><span class="column">' );
+    $self->_append_html( '</span><span>' );
 }
 
 # ------------------------------------------------------------------------------
@@ -288,15 +288,10 @@ sub handle_linebreak {
 
 sub handle_paragraphbreak {
 	my ($self) = @_;
-	trace "Handle PARAGRAPH BREAK" [HTML];
+	trace "Handle PARAGRAPH BREAK" [HTML];	
+	$self->_close_list_item_if_open;
+	$self->_finalise_lists;
 	$self->_finalise_paragraph_if_open;	
-}
-
-# ------------------------------------------------------------------------------
-
-sub parse_end {
-	my ($self) = @_;
-    $self->_finalise_paragraph_if_open;
 }
 
 # ------------------------------------------------------------------------------

@@ -162,7 +162,7 @@ sub tokenize {
 				next;
 			}
 
-			if ($char =~ /[\*\/_]/ && $self->_peek_match($char)) {										
+			if ($char =~ /[\+\-\*\/_]/ && $self->_peek_match($char)) {										
 				$self->_create_and_emit_token($char);					
                 next;
 			}
@@ -301,8 +301,7 @@ sub tokenize {
 
 			if ($char eq "\n") {
 				$self->_discard_token;
-				$self->_create_and_emit_token('paragraph_break');
-				$self->_pop_state;
+				$self->_create_and_emit_token('paragraph_break');				
 				$self->_consume_until_not("\n");
 				$self->_set_indent(0);
 				next;				
@@ -318,7 +317,7 @@ sub tokenize {
 				next;
 			}
 
-			if ($char =~ /[\*\/_]/ && $self->_peek_match($char)) {
+			if ($char =~ /[\+\-\*\/_]/ && $self->_peek_match($char)) {
 				$self->_create_and_emit_token($char);					
 				$self->_pop_state;
                 next;
@@ -410,7 +409,7 @@ sub tokenize {
 				next;
 			}
 			
-			if ($char =~ /[\*\/_]/) {
+			if ($char =~ /[\+\-\*\/_]/) {
 				if ($self->_peek_match($char)) {
 					$self->_pop_state;
 					$self->_create_and_emit_token($char);
