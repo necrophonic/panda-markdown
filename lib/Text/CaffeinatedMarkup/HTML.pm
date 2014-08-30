@@ -216,7 +216,7 @@ sub handle_media {
 		/^center$/  && do { $class=' class="center"' };
 	}
 
-	$self->_append_html(qq|<img src="$src"$width$height$class>|);
+	$self->_append_html(qq|<img class="cml-img" src="$src"$width$height$class>|);
 }
 
 # ------------------------------------------------------------------------------
