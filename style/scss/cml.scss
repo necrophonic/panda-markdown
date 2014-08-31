@@ -6,11 +6,15 @@
 	.cml-img 	      { margin: 5px;  }
 	.cml-pulled-left  { float: left;  margin: 5px 10px 5px 0px; }
 	.cml-pulled-right { float: right; margin: 5px 0px 5px 10px; }
+	.cml-stretch { display: block; width: 100%; }
+	.cml-center	 { display: block; margin-left: auto; margin-right: auto; }
 }
 
 @media all and (max-width: 600px) {
 	.cml-pulled-left  { float: none; display: block; margin-left: auto; margin-right: auto; }
 	.cml-pulled-right { float: none; display: block; margin-left: auto; margin-right: auto; }
+	.cml-stretch { display: block; width: 100%; }
+	.cml-center	 { display: block; margin-left: auto; margin-right: auto; }
 }
 
 // Rows and columns
