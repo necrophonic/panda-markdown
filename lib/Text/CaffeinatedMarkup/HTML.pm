@@ -204,19 +204,21 @@ sub handle_link {
 sub handle_media {
 	my ($self) = @_;
 
+	$self->_finalise_paragraph_if_open;
+
 	my $src    = $self->token->src;
 	my $width  = $self->token->width  ? ' width="'.$self->token->width.'"' : '';
 	my $height = $self->token->height ? ' height="'.$self->token->height.'"' : '';	
 
 	my $class  = '';
 	if ($_ = $self->token->align) {
-		/^left$/    && do { $class=' class="cml-pulled-left"' };
-		/^right$/   && do { $class=' class="cml-pulled-right"' };
-		/^stretch$/ && do { $class=' class="stretch"' };
-		/^center$/  && do { $class=' class="center"' };
+		/^left$/    && do { $class=' cml-pulled-left' };
+		/^right$/   && do { $class=' cml-pulled-right' };
+		/^stretch$/ && do { $class=' cml-stretch' };
+		/^center$/  && do { $class=' cml-center' };
 	}
 
-	$self->_append_html(qq|<img class="cml-img" src="$src"$width$height$class>|);
+	$self->_append_html(qq|<img class="cml-img$class" src="$src"$width$height>|);
 }
 
 # ------------------------------------------------------------------------------
