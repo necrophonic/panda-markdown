@@ -42,9 +42,10 @@ sub test_lists {
   - Item 1.1
     1 Item 2.1
   - Item 1.2
+    12 Item 3.1
 EOT
 ),
-		   q|<ul><li class="cml-list-item"><p>Item 1.1</p></li><ol><li class="cml-list-item"><p>Item 2.1</p></li></ol><li class="cml-list-item"><p>Item 1.2<br></p></li></ul>|,
+		   q|<ul><li class="cml-list-item"><p>Item 1.1</p></li><ol><li class="cml-list-item"><p>Item 2.1</p></li></ol><li class="cml-list-item"><p>Item 1.2</p></li><ol><li class="cml-list-item"><p>Item 3.1<br></p></li></ol></ul>|,
 		   'simple ordered and unordered';
 
 		is $parser->do(<<EOT
