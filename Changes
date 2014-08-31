@@ -1,5 +1,6 @@
-0.24 2014-XX-XX
+0.24 2014-08-31
 	- Fixes image alignment styles
+	- Responsive images in HTML
 	- Images now fall outside paragraphs
 
 0.23 2014-08-30
