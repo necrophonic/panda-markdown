@@ -9,7 +9,7 @@ use Helpers;
 use Log::Declare;
 use Text::CaffeinatedMarkup::PullParser;
 
-plan tests => 5;
+plan tests => 7;
 
     can_ok 'Text::CaffeinatedMarkup::PullParser', qw|handle_listitem|;
 
@@ -18,8 +18,9 @@ plan tests => 5;
     test_simple_list();
     test_simple_list_with_emphasis();
     test_simple_list_multilevel();
-
+    test_numbered_list();
     test_break_at_start_of_list();
+    test_resume_after_list();
 
 done_testing();
 
@@ -85,7 +86,7 @@ EOT
 # ------------------------------------------------------------------------------
 
 sub test_break_at_start_of_list {
-  subtest 'test simple list' => sub {
+  subtest 'test break at start of list' => sub {
         plan tests => 1;
 
 $pp->tokenize(<<EOT
@@ -93,8 +94,49 @@ $pp->tokenize(<<EOT
   - Item 1  
 EOT
 );
+        test_expected_tokens_list(
+            $pp->tokens, [qw|paragraph_break list_item text line_break|]
+        );
+    };
+}
+
+# ------------------------------------------------------------------------------
+
+sub test_numbered_list {
+  subtest 'test numbered list' => sub {
+        plan tests => 2;
+
+$pp->tokenize(<<EOT
+  1 Item 1  
+  2 Item 2
+  11 Item 3
+EOT
+);
     test_expected_tokens_list(
-      $pp->tokens, [qw|paragraph_break list_item text line_break|]
+      $pp->tokens, [qw|list_item text list_item text list_item text line_break|]
     );
+    SKIP: {
+      skip 'incorrect token', 1 unless ref $pp->tokens->[6] =~ /TextToken/;
+      $pp->tokens->[6]->content, 'Item 3', 'content correct';
+    }    
   };
 }
+
+# ------------------------------------------------------------------------------
+
+sub test_resume_after_list {
+    subtest 'test resuming after list' => sub {
+
+$pp->tokenize(<<EOT
+  - item 1
+
+Afterwards
+EOT
+);
+      test_expected_tokens_list(
+          $pp->tokens, [qw|list_item text paragraph_break text line_break|]
+      );
+    };
+}
+
+# ------------------------------------------------------------------------------

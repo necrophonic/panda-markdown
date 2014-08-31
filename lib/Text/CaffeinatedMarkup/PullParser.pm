@@ -254,10 +254,18 @@ sub tokenize {
 				next;
 			}
 
-			if ($char =~ /\d/ && $self->indent && $self->_peek_match(' ')) {
-				$self->_discard_token; # Get rid of newline
-				$self->_create_and_emit_token('o_list');				
-				next;
+			if ($char =~ /\d/ && $self->indent) {
+				$self->_consume_until_not_re(qr/\d/);
+				if ($self->_peek_match(' ')) {
+					$self->_discard_token;
+					$self->_create_and_emit_token('o_list');
+					next;
+				}
+				else {
+					# Got indented numbers with nothing (valid) after.
+					# Don't know what to do with this yet so parse error!
+					$self->_parse_error('Bad sequence. Thought it was a numbered list?');
+				}				
 			}
 
 			if ($char eq '"' && $self->_peek_match($char)) {
@@ -433,7 +441,7 @@ sub tokenize {
 
 			if ($char eq '{') {
 				if ($self->_peek_match($char)) {
-					$self->_push_state('media_src');
+					$self->_switch_state('media_src');
 					$self->_create_token('media');
 				}
 				else {
@@ -649,12 +657,47 @@ sub _consume_until {
 
 # ------------------------------------------------------------------------------
 
+# Consume any number of chars until the specified one is reached.
+sub _consume_until_re {
+	my ($self, $delimit_re) = @_;
+	my $char = $self->chars->[$self->_inc_pointer];
+	debug "Consume until [%s]", $delimit_re [TOKENIZE CONSUME_UNTIL];
+	my $consumed = 1;
+	while($char && $char !~ $delimit_re) {
+		$consumed++;		
+		trace "... ignore [%s]", $char [TOKENIZE CONSUME_UNTIL];
+		$char = $self->chars->[$self->_inc_pointer];
+	}
+	trace "... consumed ($consumed)!" [TOKENIZE CONSUME_UNTIL];	
+	$self->_dec_pointer;
+	return $consumed;
+}
+
+# ------------------------------------------------------------------------------
+
 sub _consume_until_not {
 	my ($self, $delimit) = @_;
 	my $char = $self->chars->[$self->_inc_pointer];
 	debug "Consume until [%s]", $delimit [TOKENIZE CONSUME_UNTIL];
 	my $consumed = 1;
 	while($char && $char eq $delimit) {
+		$consumed++;		
+		trace "... ignore [%s]", $char [TOKENIZE CONSUME_UNTIL];
+		$char = $self->chars->[$self->_inc_pointer];
+	}
+	trace "... consumed ($consumed)!" [TOKENIZE CONSUME_UNTIL];	
+	$self->_dec_pointer;
+	return $consumed;
+}
+
+# ------------------------------------------------------------------------------
+
+sub _consume_until_not_re {
+	my ($self, $delimit_re) = @_;
+	my $char = $self->chars->[$self->_inc_pointer];
+	debug "Consume until [%s]", $delimit_re [TOKENIZE CONSUME_UNTIL];
+	my $consumed = 1;
+	while($char && $char =~ $delimit_re) {
 		$consumed++;		
 		trace "... ignore [%s]", $char [TOKENIZE CONSUME_UNTIL];
 		$char = $self->chars->[$self->_inc_pointer];

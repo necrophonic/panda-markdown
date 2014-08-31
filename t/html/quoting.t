@@ -23,7 +23,7 @@ sub test_block_quoting {
 		subtest 'Single line block quote' => sub {
 			plan tests => 1;
 			is $parser->do(qq|  ""Single quote""|),
-			   q|<blockquote><p>Single quote</p></blockquote>|,
+			   q|<blockquote class="cml-blockquote"><p>Single quote</p></blockquote>|,
 			   'single line block quote with text';
 		};
 

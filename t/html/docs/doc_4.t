@@ -28,4 +28,4 @@ but it's perfectly formed.
   - item 1
   - item 2
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-<p>This is a simple doc.</p><p>There isn't much in it,<br>but it's perfectly formed.</p><ul><li><p>item 1</p></li><li><p>item 2</p></li></ul>
+<p>This is a simple doc.</p><p>There isn't much in it,<br>but it's perfectly formed.</p><ul><li class="cml-list-item"><p>item 1</p></li><li class="cml-list-item"><p>item 2</p></li></ul>
