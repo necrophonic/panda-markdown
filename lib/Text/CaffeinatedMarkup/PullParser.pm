@@ -162,7 +162,7 @@ sub tokenize {
 				next;
 			}
 
-			if ($char =~ /[\*\/_]/ && $self->_peek_match($char)) {										
+			if ($char =~ /[\+\-\*\/_]/ && $self->_peek_match($char)) {										
 				$self->_create_and_emit_token($char);					
                 next;
 			}
@@ -325,7 +325,7 @@ sub tokenize {
 				next;
 			}
 
-			if ($char =~ /[\*\/_]/ && $self->_peek_match($char)) {
+			if ($char =~ /[\+\-\*\/_]/ && $self->_peek_match($char)) {
 				$self->_create_and_emit_token($char);					
 				$self->_pop_state;
                 next;
@@ -417,7 +417,7 @@ sub tokenize {
 				next;
 			}
 			
-			if ($char =~ /[\*\/_]/) {
+			if ($char =~ /[\+\-\*\/_]/) {
 				if ($self->_peek_match($char)) {
 					$self->_pop_state;
 					$self->_create_and_emit_token($char);
@@ -441,7 +441,7 @@ sub tokenize {
 
 			if ($char eq '{') {
 				if ($self->_peek_match($char)) {
-					$self->_push_state('media_src');
+					$self->_switch_state('media_src');
 					$self->_create_token('media');
 				}
 				else {

@@ -21,11 +21,11 @@ sub test_basic_text_with_emphasis {
 		plan tests => 2;
 		
 		is $parser->do( 'The **quick** brown //foo//' ),
-		   '<p>The <strong>quick</strong> brown <em>foo</em></p>',
+		   '<p>The <strong class="cml-strong">quick</strong> brown <em class="cml-em">foo</em></p>',
 		   'plain text with emphasis';		
 
 		is $parser->do( 'The **quick //brown// foo**' ),
-		   '<p>The <strong>quick <em>brown</em> foo</strong></p>',
+		   '<p>The <strong class="cml-strong">quick <em class="cml-em">brown</em> foo</strong></p>',
 		   'plain text with emphasis';		
 	};
 }
