@@ -204,6 +204,8 @@ sub handle_link {
 sub handle_media {
 	my ($self) = @_;
 
+	$self->_finalise_paragraph_if_open;
+
 	my $src    = $self->token->src;
 	my $width  = $self->token->width  ? ' width="'.$self->token->width.'"' : '';
 	my $height = $self->token->height ? ' height="'.$self->token->height.'"' : '';	

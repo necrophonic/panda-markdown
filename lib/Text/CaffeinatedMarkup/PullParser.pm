@@ -433,7 +433,7 @@ sub tokenize {
 
 			if ($char eq '{') {
 				if ($self->_peek_match($char)) {
-					$self->_push_state('media_src');
+					$self->_switch_state('media_src');
 					$self->_create_token('media');
 				}
 				else {

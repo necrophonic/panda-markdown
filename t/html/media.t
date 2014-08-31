@@ -28,7 +28,7 @@ sub test_basic_image_media {
 		   'simple image with no options';
 
 		is $parser->do( 'See this {{image.jpg}}' ),
-		   '<p>See this <img class="cml-img" src="image.jpg"></p>',
+		   '<p>See this </p><img class="cml-img" src="image.jpg">',
 		   'simple image with no options in paragraph';
 	};
 }
