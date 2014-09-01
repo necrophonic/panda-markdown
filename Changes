@@ -1,6 +1,7 @@
 0.25 2014-09-XX
 	- Support for multi digit ordered lists
 	- Style support for stretch and center
+	- May now specify captions for media items (figcaption)
 
 0.24 2014-08-31
 	- Fixes image alignment styles
