@@ -22,7 +22,7 @@ done_testing();
 
 sub test_simple_image_media {
     subtest 'test simple image media' => sub {
-        plan tests => 4;
+        plan tests => 6;
     
         subtest 'Image with options' => sub {
     		plan tests => 3;
@@ -58,7 +58,19 @@ sub test_simple_image_media {
     		test_expected_tokens_list( $pp->tokens, [qw|row media row|] );
     		is $pp->tokens->[1]->src, 'images/cat.jpg', 'src is correct';
     		is $pp->tokens->[1]->options, '', 'options is correct';
-    	};    
+    	};
+
+        subtest 'Image with caption' => sub {
+            plan tests => 1;
+            $pp->tokenize(qq!{{cat.jpg|"It's a cat"}}!);
+            is $pp->tokens->[0]->caption, "It's a cat", 'caption correct';
+        };
+
+        subtest 'Image with caption including double quote' => sub {
+            plan tests => 1;
+            $pp->tokenize(qq!{{cat.jpg|"It's "a cat"}}!);
+            is $pp->tokens->[0]->caption, q|It's "a cat|, 'caption correct';
+        };
     };
 }
 
