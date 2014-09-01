@@ -207,6 +207,7 @@ sub handle_media {
 	my $src    = $self->token->src;
 	my $width  = $self->token->width  ? ' width="'.$self->token->width.'"' : '';
 	my $height = $self->token->height ? ' height="'.$self->token->height.'"' : '';	
+	my $caption= $self->token->caption;
 
 	my $class  = '';
 	if ($_ = $self->token->align) {
@@ -216,7 +217,16 @@ sub handle_media {
 		/^center$/  && do { $class=' cml-center' };
 	}
 
+	if (defined $caption) {
+		$self->_append_html('<figure>');
+	}
+
 	$self->_append_html(qq|<img class="cml-img$class" src="$src"$width$height>|);
+
+	if (defined $caption) {
+		$self->_append_html(qq|<figcaption>$caption</figcaption>|);
+		$self->_append_html('</figure>');
+	}
 }
 
 # ------------------------------------------------------------------------------
