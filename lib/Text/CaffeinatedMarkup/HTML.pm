@@ -9,7 +9,6 @@ use Log::Declare;
 use boolean;
 
 # To implement
-# * spacers
 # * data list
 # * table
 # * block code
@@ -302,6 +301,13 @@ sub handle_paragraphbreak {
 	$self->_close_list_item_if_open;
 	$self->_finalise_lists;
 	$self->_finalise_paragraph_if_open;	
+}
+
+# ------------------------------------------------------------------------------
+
+sub handle_spacer {
+	my ($self) = @_;
+	$self->_append_html('<div class="cml-spacer">&nbsp;</div>');
 }
 
 # ------------------------------------------------------------------------------

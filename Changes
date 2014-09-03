@@ -1,4 +1,7 @@
-0.25 2014-09-XX
+0.26
+	- Adds support for spacers (^^)
+
+0.25 2014-09-02
 	- Support for multi digit ordered lists
 	- Style support for stretch and center
 	- May now specify captions for media items (figcaption)

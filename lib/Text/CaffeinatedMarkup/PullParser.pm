@@ -15,6 +15,7 @@ use Text::CaffeinatedMarkup::PullParser::ListItemToken;
 use Text::CaffeinatedMarkup::PullParser::EmphasisToken;
 use Text::CaffeinatedMarkup::PullParser::DividerToken;
 use Text::CaffeinatedMarkup::PullParser::HeaderToken;
+use Text::CaffeinatedMarkup::PullParser::SpacerToken;
 use Text::CaffeinatedMarkup::PullParser::MediaToken;
 use Text::CaffeinatedMarkup::PullParser::TextToken;
 use Text::CaffeinatedMarkup::PullParser::LinkToken;
@@ -24,7 +25,6 @@ use Text::CaffeinatedMarkup::PullParser::RowToken;
 # TODO check eof error states
 
 # To implement
-# * spacers
 # * data list
 # * table
 # * block code
@@ -271,6 +271,14 @@ sub tokenize {
 			if ($char eq '"' && $self->_peek_match($char)) {
 				$self->_create_and_emit_token('block_quote');
 				$self->_set_is_block_quoting( !$self->is_block_quoting );
+				next;
+			}
+
+			if ($char eq '^' && $self->_peek_match($char)) {
+				$self->_discard_token;
+				$self->_consume_until("\n");
+				$self->_inc_pointer;
+				$self->_create_and_emit_token('spacer');
 				next;
 			}
 
@@ -603,6 +611,7 @@ sub _create_token {
 	/^media$/           && do { $t = Text::CaffeinatedMarkup::PullParser::MediaToken->new };
 	/^div$/             && do { $t = Text::CaffeinatedMarkup::PullParser::DividerToken->new };
 	/^header$/          && do { $t = Text::CaffeinatedMarkup::PullParser::HeaderToken->new };	
+	/^spacer$/          && do { $t = Text::CaffeinatedMarkup::PullParser::SpacerToken->new };	
 	/^line_break$/      && do { $t = Text::CaffeinatedMarkup::PullParser::LineBreakToken->new };
     /^row_(start|end)$/ && do { $t = Text::CaffeinatedMarkup::PullParser::RowToken->new($1) };
     /^column_divider$/  && do { $t = Text::CaffeinatedMarkup::PullParser::ColumnDividerToken->new };
@@ -813,5 +822,6 @@ sub handle_row  		  {$all->($_[0])};
 sub handle_columndivider  {$all->($_[0])};
 sub handle_blockquote	  {$all->($_[0])};
 sub handle_listitem		  {$all->($_[0])};
+sub handle_spacer		  {$all->($_[0])};
 
 1;
