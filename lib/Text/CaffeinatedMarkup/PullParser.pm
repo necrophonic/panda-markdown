@@ -146,9 +146,15 @@ sub tokenize {
 				next;
 			}
 
+			# if ($char eq '"' && $self->_peek_match($char)) {
+			# 	$self->_create_and_emit_token('block_quote');
+			# 	$self->_set_is_block_quoting( !$self->is_block_quoting );
+			# 	next;
+			# }
+
 			if ($char eq '"' && $self->_peek_match($char)) {
+				$self->_push_state('blockquote');
 				$self->_create_and_emit_token('block_quote');
-				$self->_set_is_block_quoting( !$self->is_block_quoting );
 				next;
 			}
 
@@ -184,6 +190,25 @@ sub tokenize {
                 $self->_set_indent(0);
                 next;
             }
+
+			# Anything else
+			$self->_push_state('text');
+			$self->_create_token('text');
+			$self->token->append_content($char);
+			next;
+		}
+
+		# --------------------------------------------------
+
+		if ($state eq 'blockquote') {
+
+			# TODO
+
+			if ($char eq '"' && $self->_peek_match($char)) {
+				$self->_create_and_emit_token('block_quote');
+				$self->_pop_state;
+				next;
+			}
 
 			# Anything else
 			$self->_push_state('text');
@@ -268,9 +293,15 @@ sub tokenize {
 				}				
 			}
 
+			# if ($char eq '"' && $self->_peek_match($char)) {
+			# 	$self->_create_and_emit_token('block_quote');
+			# 	$self->_set_is_block_quoting( !$self->is_block_quoting );
+			# 	next;
+			# }
+
 			if ($char eq '"' && $self->_peek_match($char)) {
+				$self->_switch_state('blockquote');
 				$self->_create_and_emit_token('block_quote');
-				$self->_set_is_block_quoting( !$self->is_block_quoting );
 				next;
 			}
 
@@ -419,9 +450,15 @@ sub tokenize {
 				next;
 			}
 
+			# if ($char eq '"' && $self->_peek_match($char)) {
+			# 	$self->_create_and_emit_token('block_quote');
+			# 	$self->_set_is_block_quoting(false);
+			# 	next;
+			# }
+
 			if ($char eq '"' && $self->_peek_match($char)) {
+				$self->_switch_state('blockquote');
 				$self->_create_and_emit_token('block_quote');
-				$self->_set_is_block_quoting(false);
 				next;
 			}
 			
