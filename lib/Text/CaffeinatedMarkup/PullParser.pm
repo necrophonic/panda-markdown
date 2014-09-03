@@ -825,3 +825,17 @@ sub handle_listitem		  {$all->($_[0])};
 sub handle_spacer		  {$all->($_[0])};
 
 1;
+
+=head1 NAME
+
+Text::CaffeinatedMarkup::PullParser - parser for caffeinated markup
+
+=head1 DESCRIPTION
+
+L<Text::CaffeinatedMarkup::PullParser> provides a pull parser interface for
+the caffeinated markup syntax.
+
+See L<https://github.com/necrophonic/caffeinated-markup-language/wiki> see doco and
+syntax
+
+=cut
