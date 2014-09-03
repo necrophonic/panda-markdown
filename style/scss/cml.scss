@@ -1,20 +1,17 @@
 @import "clearfix";
 
-.cml-img { max-width: 100%; box-shadow: 0px 0px 10px #000; border: 1px solid #888; }
-
-@media all and (min-width: 600px) {
-	.cml-img 	      { margin: 5px;  }
-	.cml-pulled-left  { float: left;  margin: 5px 10px 5px 0px; }
-	.cml-pulled-right { float: right; margin: 5px 0px 5px 10px; }
-	.cml-stretch { display: block; width: 100%; }
-	.cml-center	 { display: block; margin-left: auto; margin-right: auto; }
+@media all and (min-width: 600px) {	
+	.cml-pulled-left  { max-width: 100%; float: left;  margin: 5px 10px 5px 0px; }
+	.cml-pulled-right { max-width: 100%; float: right; margin: 5px 0px 5px 10px; }
+	.cml-stretch      { max-width: 100%; display: block; margin: 5px; width: 100%; }
+	.cml-center	      { max-width: 100%; display: block; margin: 5px; margin-left: auto; margin-right: auto; }
 }
 
 @media all and (max-width: 600px) {
-	.cml-pulled-left  { float: none; display: block; margin-left: auto; margin-right: auto; }
-	.cml-pulled-right { float: none; display: block; margin-left: auto; margin-right: auto; }
-	.cml-stretch { display: block; width: 100%; }
-	.cml-center	 { display: block; margin-left: auto; margin-right: auto; }
+	.cml-pulled-left  { max-width: 100%; float: none; display: block; margin-left: auto; margin-right: auto; }
+	.cml-pulled-right { max-width: 100%; float: none; display: block; margin-left: auto; margin-right: auto; }
+	.cml-stretch      { max-width: 100%; display: block; width: 100%; }
+	.cml-center	      { max-width: 100%; display: block; margin-left: auto; margin-right: auto; }
 }
 
 // Rows and columns
@@ -47,15 +44,6 @@
 .cml-list-item {
 	> p {margin: 3px 0px 3px 0px;} // Collapse internal paragraph
 }
-
-
-// Emphasis
-.cml-ins { border-bottom: 1px double; }
-.cml-del { text-decoration: line-through; }
-.cml-strong { font-weight: bold; }
-.cml-em { font-style: italic; }
-.cml-u { font-decoration: underline; }
-
 
 // Quoting
 .cml-blockquote {
